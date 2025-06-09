@@ -30,6 +30,34 @@
             width: 4rem;
             height: 4rem;
         }
+        .page-container {
+            min-height: 500px;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .step-indicator.active .w-8 {
+            background-color: #2563eb !important;
+            color: white !important;
+        }
+        .step-indicator.active span {
+            color: #1f2937 !important;
+            font-weight: 600;
+        }
+        .step-indicator.completed .w-8 {
+            background-color: #16a34a !important;
+            color: white !important;
+        }
+        .step-indicator.completed span {
+            color: #16a34a !important;
+            font-weight: 600;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .page-container {
+                box-shadow: none !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -37,7 +65,6 @@
         <!-- Header -->
         <div class="bg-green-600 text-white p-6 rounded-lg mb-6">
             <div class="flex items-center gap-3 mb-2">
-
                 <h1 class="text-2xl font-bold">Insecticide Dose Calculator (IDC)</h1>
             </div>
             <p class="text-green-100">Mix Smart, Spray Safe</p>
@@ -46,9 +73,28 @@
             </p>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Input Section -->
-            <div class="bg-gray-50 p-6 rounded-lg">
+        <!-- Navigation Steps -->
+        <div class="mb-6 no-print">
+            <div class="flex items-center justify-center space-x-4">
+                <div id="step-1" class="flex items-center step-indicator active">
+                    <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
+                        1
+                    </div>
+                    <span class="ml-2 text-sm font-medium">Input Data</span>
+                </div>
+                <div class="w-16 h-0.5 bg-gray-300"></div>
+                <div id="step-2" class="flex items-center step-indicator">
+                    <div class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-sm font-semibold">
+                        2
+                    </div>
+                    <span class="ml-2 text-sm font-medium text-gray-500">Results</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Page -->
+        <div id="input-page" class="page-container">
+            <div class="bg-gray-50 p-6 rounded-lg max-w-4xl mx-auto">
                 <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
                     <svg class="lucide-icon text-blue-500" viewBox="0 0 24 24">
                         <circle cx="12" cy="12" r="10"/>
@@ -116,6 +162,7 @@
                             *Isipadu sebenar akan diketahui semasa survey pagi / *Actual volume determined during morning survey
                         </p>
                     </div>
+
                     <!-- Standard Input Fields -->
                     <div id="standard-inputs">
                         <!-- Number of Houses -->
@@ -208,24 +255,26 @@
                             id="insecticide_type"
                             class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500"
                         >
-                            <optgroup label="Organophosphate (Built-in)">
-                                <option value="malathion_57ec">Malathion 57% EC</option>
-                                <option value="malathion_generic">Malathion (Generic)</option>
-                                <option value="pirimiphos_methyl">Pirimiphos-methyl 50% EC</option>
-                                <option value="actelic_50ec">Actelic 50EC</option>
-                                <option value="sumithion_50ec">Sumithion 50EC</option>
-                                <option value="temephos_50ec">Temephos 50% EC (Larvicide)</option>
+                            <optgroup label="Organophosphate">
+                                <option value="fyfanon_ulv">Fyfanon ULV (Malathion 57% EC)</option>
+                                <option value="actellic_50ec">Actellic 50EC (Pirimiphos-methyl 50% EC)</option>
+                                <option value="sumithion_50ec">Sumithion 50EC (Fenitrothion 50% EC)</option>
+                                <option value="sumithion_l40">Sumithion L-40 (Fenitrothion 40% + Tetramethrin 1%)</option>
+                                <option value="abate_500">Abate 500 (Temephos - Larvicide)</option>
+                                <option value="abate_11g">Abate 1.1G (Temephos Granules - Larvicide)</option>
                             </optgroup>
-                            <optgroup label="Synthetic Pyrethroid (Built-in)">
-                                <option value="deltamethrin_25sc">Deltamethrin 2.5% SC</option>
-                                <option value="cypermethrin_10ec">Cypermethrin 10% EC</option>
-                                <option value="permethrin_25ec">Permethrin 25% EC</option>
-                                <option value="aqua_kothrine">Aqua K-Othrine EW</option>
-                                <option value="moskilla">Moskilla</option>
+                            <optgroup label="Synthetic Pyrethroid">
+                                <option value="kothrine_sc25">K-Othrine SC25 (Deltamethrin 2.5% SC)</option>
+                                <option value="aqua_kothrine">Aqua K-Othrine EW (Deltamethrin 2.0% EW)</option>
+                                <option value="deltacide">Deltacide (Deltamethrin Concentrate)</option>
+                                <option value="cymbush_10ec">Cymbush 10EC (Cypermethrin 10% EC)</option>
+                                <option value="ambush_25ec">Ambush 25EC (Permethrin 25% EC)</option>
+                                <option value="moskilla">Moskilla (Metofluthrin 0.76%)</option>
                             </optgroup>
-                            <optgroup label="Multi-active Pyrethroid (Built-in)">
-                                <option value="aqua_resigen">Aqua Resigen</option>
-                                <option value="bioallethrin_piperonyl">Bioallethrin + PBO</option>
+                            <optgroup label="Multi-active Formulations">
+                                <option value="aqua_resigen">Aqua Resigen (Water-based Multi-active)</option>
+                                <option value="resigen">Resigen (Oil/Water Multi-active)</option>
+                                <option value="pynosect">Pynosect (Bioallethrin + PBO)</option>
                             </optgroup>
                         </select>
                         <div id="product-info" class="mt-2 p-2 bg-blue-50 rounded text-xs"></div>
@@ -293,45 +342,100 @@
                     <div class="flex gap-3 pt-4">
                         <button
                             id="btn-calculate"
-                            class="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors"
+                            class="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
                         >
-                            Kira / Calculate
+                            <svg class="w-5 h-5" viewBox="0 0 24 24">
+                                <path d="M9 12l2 2 4-4"/>
+                                <circle cx="12" cy="12" r="10"/>
+                            </svg>
+                            Kira & Lihat Keputusan / Calculate & View Results
                         </button>
                         <button
                             id="btn-reset"
-                            class="flex-1 bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 transition-colors"
+                            class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
                         >
+                            <svg class="w-4 h-4" viewBox="0 0 24 24">
+                                <path d="m3 12 2 2 4-4"/>
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                            </svg>
                             Reset
                         </button>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Results Section -->
-            <div class="bg-blue-50 p-6 rounded-lg">
-                <h2 class="text-xl font-semibold mb-4 text-blue-800">
-                    Keputusan Kiraan / Calculation Results
-                </h2>
+        <!-- Results Page -->
+        <div id="results-page" class="page-container" style="display: none;">
+            <div class="max-w-6xl mx-auto">
+                <!-- Results Header -->
+                <div class="bg-blue-50 p-6 rounded-lg mb-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-semibold text-blue-800 flex items-center gap-2">
+                            <svg class="w-6 h-6" viewBox="0 0 24 24">
+                                <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+                            </svg>
+                            Keputusan Kiraan / Calculation Results
+                        </h2>
+                        <div class="flex gap-3 no-print">
+                            <button
+                                id="btn-back-to-input"
+                                class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
+                            >
+                                <svg class="w-4 h-4" viewBox="0 0 24 24">
+                                    <path d="m12 19-7-7 7-7"/>
+                                    <path d="m19 12-7 7-7-7"/>
+                                </svg>
+                                Kembali ke Input
+                            </button>
+                            <button
+                                id="btn-print-results"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                            >
+                                <svg class="w-4 h-4" viewBox="0 0 24 24">
+                                    <polyline points="6,9 6,2 18,2 18,9"/>
+                                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2 2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                                    <rect width="12" height="8" x="6" y="14"/>
+                                </svg>
+                                Cetak / Print
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-                <div id="results-container" style="display: none;">
+                <!-- Results Container -->
+                <div id="results-container">
                     <!-- Results will be populated by JavaScript -->
                 </div>
 
-                <div id="no-results" class="text-center text-gray-500 py-8">
- 
-                    <p>Sila masukkan maklumat dan klik "Kira" untuk mendapat keputusan</p>
-                    <p class="text-sm">Please enter information and click "Calculate" to get results</p>
+                <!-- No Results State -->
+                <div id="no-results" class="text-center text-gray-500 py-12 bg-white rounded-lg">
+                    <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="m9 12 2 2 4-4"/>
+                    </svg>
+                    <h3 class="text-lg font-medium mb-2">Tiada Keputusan / No Results</h3>
+                    <p class="text-gray-400">Sila masukkan maklumat dan klik "Kira" untuk mendapat keputusan</p>
+                    <p class="text-sm text-gray-400">Please enter information and click "Calculate" to get results</p>
+                    <button
+                        id="btn-go-to-input"
+                        class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        Pergi ke Input / Go to Input
+                    </button>
                 </div>
             </div>
         </div>
 
-<!-- Footer Information -->
+        <!-- Footer Information -->
         <div class="mt-6 bg-gray-100 p-4 rounded-lg">
             <h3 class="font-semibold mb-2">Nota Penting / Important Notes:</h3>
             <ul class="text-sm text-gray-700 space-y-1">
+                <li>• Database telah dikemaskini dengan nama komersial sebenar produk racun serangga</li>
                 <li>• Sentiasa rujuk label produk untuk arahan penggunaan yang tepat</li>
                 <li>• Patuhi garis panduan Kementerian Kesihatan Malaysia</li>
                 <li>• Gunakan alat perlindungan diri (PPE) yang sesuai</li>
+                <li>• Database updated with actual commercial insecticide product names</li>
             </ul>
         </div>
 
@@ -587,12 +691,12 @@
     <script>
         // Insecticide Database
         const insecticideData = {
-            malathion_57ec: {
-                name: 'Malathion 57% EC',
+            fyfanon_ulv: {
+                name: 'Fyfanon ULV',
                 chemical_class: 'Organophosphate',
                 active_ingredient: 'Malathion',
                 concentration: '57% EC',
-                common_products: ['Fyfanon ULV', 'Malathion 57EC', 'Cythion ULV'],
+                common_products: ['Fyfanon ULV', 'Cythion ULV'],
                 fogging_dilution: 0.8,
                 spraying_dilution: 2.5,
                 application_rate_fogging: 1.2,
@@ -612,12 +716,12 @@
                     'Jangan aplikasi berhampiran kolam ikan'
                 ]
             },
-            pirimiphos_methyl: {
-                name: 'Pirimiphos-methyl 50% EC',
+            actellic_50ec: {
+                name: 'Actellic 50EC',
                 chemical_class: 'Organophosphate',
                 active_ingredient: 'Pirimiphos-methyl',
                 concentration: '50% EC',
-                common_products: ['Actellic 50EC', 'Babolna Bio Pirimor'],
+                common_products: ['Actellic 50EC', 'Actelic 50EC'],
                 fogging_dilution: 0.4,
                 spraying_dilution: 1.5,
                 application_rate_fogging: 0.8,
@@ -636,12 +740,12 @@
                     'Elakkan pencemaran sumber air'
                 ]
             },
-            deltamethrin_25sc: {
-                name: 'Deltamethrin 2.5% SC',
+            kothrine_sc25: {
+                name: 'K-Othrine SC25',
                 chemical_class: 'Synthetic Pyrethroid',
                 active_ingredient: 'Deltamethrin',
                 concentration: '2.5% SC',
-                common_products: ['K-Othrine SC25', 'Decis 2.5EC', 'DeltaGard'],
+                common_products: ['K-Othrine SC25', 'Decis 2.5EC'],
                 fogging_dilution: 0.15,
                 spraying_dilution: 0.025,
                 application_rate_fogging: 0.3,
@@ -662,12 +766,12 @@
                     'Elakkan aplikasi semasa musim pembiakan ikan'
                 ]
             },
-            cypermethrin_10ec: {
-                name: 'Cypermethrin 10% EC',
+            cymbush_10ec: {
+                name: 'Cymbush 10EC',
                 chemical_class: 'Synthetic Pyrethroid',
                 active_ingredient: 'Cypermethrin',
                 concentration: '10% EC',
-                common_products: ['Cymbush 10EC', 'Ripcord 10EC', 'Sherpa 10EC'],
+                common_products: ['Cymbush 10EC', 'Ripcord 10EC'],
                 fogging_dilution: 0.2,
                 spraying_dilution: 0.05,
                 application_rate_fogging: 0.4,
@@ -686,12 +790,12 @@
                     'Boleh menyebabkan bioaccumulation'
                 ]
             },
-            permethrin_25ec: {
-                name: 'Permethrin 25% EC',
+            ambush_25ec: {
+                name: 'Ambush 25EC',
                 chemical_class: 'Synthetic Pyrethroid',
                 active_ingredient: 'Permethrin',
                 concentration: '25% EC',
-                common_products: ['Ambush 25EC', 'Pounce 25EC', 'Outflank 25EC'],
+                common_products: ['Ambush 25EC', 'Pounce 25EC'],
                 fogging_dilution: 0.1,
                 spraying_dilution: 0.02,
                 application_rate_fogging: 0.25,
@@ -710,35 +814,38 @@
                     'Relatively safe untuk mamalia dan burung'
                 ]
             },
-            temephos_50ec: {
-                name: 'Temephos 50% EC (Larvicide)',
+            abate_500: {
+                name: 'Abate 500',
                 chemical_class: 'Organophosphate',
                 active_ingredient: 'Temephos',
-                concentration: '50% EC',
-                common_products: ['Abate 500EC', 'Biothion'],
+                concentration: '47.4% w/w',
+                common_products: ['Abate 500'],
                 fogging_dilution: 0.0,
                 spraying_dilution: 0.0,
                 application_rate_fogging: 0.0,
                 application_rate_spraying: 0.0,
-                larvicide_rate: 1.0,
+                larvicide_rate: 12.0, // 12ml per 10 litres water
+                larvicide_rate_per_hectare: 120, // 120ml per hectare
+                ulv_adult_rate: 400, // 400ml ULV for adults
                 compatible_solvents: ['water'],
                 indoor_outdoor: ['outdoor'],
-                phe_number: 'PHE/LARV/001',
+                phe_number: 'Official MOH Larvicide',
                 safety_warnings: [
-                    'Khusus untuk kawalan larva - BUKAN untuk fogging dewasa',
-                    'Gunakan untuk tempat pembiakan nyamuk sahaja',
-                    'Dos: 1ppm untuk air bertakung',
-                    'Selamat untuk ikan pada kepekatan rendah'
+                    'Khusus untuk kawalan larva (Culex quinquefasciatus, Aedes aegypti)',
+                    'Juga berkesan untuk nyamuk dewasa dengan ULV',
+                    'Gunakan hanya mengikut arahan pada label',
+                    'Bertindak melalui ingestion atau sentuhan'
                 ],
                 environmental_warnings: [
-                    'Specifically designed untuk larviciding',
-                    'Biodegradable dalam persekitaran akuatik'
+                    'Untuk air bertakung (kolam, tasik, marshes, longkang)',
+                    'Kawasan pembiakan larva sahaja',
+                    'Aktiviti larvicide kekal selama 4 minggu minimum'
                 ]
             },
-            bioallethrin_piperonyl: {
-                name: 'Bioallethrin + Piperonyl Butoxide',
+            pynosect: {
+                name: 'Pynosect',
                 chemical_class: 'Natural Pyrethroid + Synergist',
-                active_ingredient: 'Bioallethrin 1% + PBO 5%',
+                active_ingredient: 'Bioallethrin + Piperonyl Butoxide',
                 concentration: '6% EC',
                 common_products: ['Pynosect', 'Sumithrin', 'Bio-Mist'],
                 fogging_dilution: 0.5,
@@ -764,7 +871,7 @@
                 chemical_class: 'Synthetic Pyrethroid',
                 active_ingredient: 'Metofluthrin',
                 concentration: '0.76% w/w',
-                common_products: ['X\'Mos Mini', 'Moskilla Aerosol'],
+                common_products: ['Moskilla', 'X\'Mos Mini'],
                 fogging_dilution: 0.5, // 5ml per liter = 0.5%
                 spraying_dilution: 0.05,
                 application_rate_fogging: 0.2, // 200ml per 1000m³ = 0.2L per 1000m³
@@ -785,37 +892,12 @@
                     'Toksisiti rendah untuk mamalia'
                 ]
             },
-            actelic_50ec: {
-                name: 'Actelic 50EC',
-                chemical_class: 'Organophosphate',
-                active_ingredient: 'Pirimiphos-methyl',
-                concentration: '50% EC',
-                common_products: ['Actellic 50EC', 'Actelic 50EC'],
-                fogging_dilution: 0.4,
-                spraying_dilution: 1.5,
-                application_rate_fogging: 0.8,
-                application_rate_spraying: 35,
-                compatible_solvents: ['oil', 'water'],
-                indoor_outdoor: ['indoor', 'outdoor'],
-                phe_number: 'PHE/INS/007',
-                safety_warnings: [
-                    'Gunakan masker dan sarung tangan getah',
-                    'Elakkan penyedutan wap secara langsung',
-                    'Jangan makan, minum atau merokok semasa aplikasi',
-                    'Cuci badan dengan bersih selepas penggunaan'
-                ],
-                environmental_warnings: [
-                    'Moderately toxic kepada ikan',
-                    'Elakkan pencemaran sumber air',
-                    'Jangan aplikasi berhampiran kolam ikan'
-                ]
-            },
             sumithion_50ec: {
                 name: 'Sumithion 50EC',
                 chemical_class: 'Organophosphate',
                 active_ingredient: 'Fenitrothion',
                 concentration: '50% EC',
-                common_products: ['Sumithion 50EC', 'Sumithion L-40'],
+                common_products: ['Sumithion 50EC'],
                 fogging_dilution: 0.6,
                 spraying_dilution: 2.0,
                 application_rate_fogging: 1.0,
@@ -833,82 +915,6 @@
                     'Toksik kepada lebah dan serangga berfaedah',
                     'Jangan aplikasi semasa musim bunga',
                     'Boleh mencemarkan sumber air bawah tanah'
-                ]
-            },
-            malathion_generic: {
-                name: 'Malathion (Generic)',
-                chemical_class: 'Organophosphate',
-                active_ingredient: 'Malathion',
-                concentration: '50% EC',
-                common_products: ['Malathion 50EC', 'Generic Malathion'],
-                fogging_dilution: 0.8,
-                spraying_dilution: 2.5,
-                application_rate_fogging: 1.2,
-                application_rate_spraying: 50,
-                compatible_solvents: ['oil', 'water'],
-                indoor_outdoor: ['indoor', 'outdoor'],
-                phe_number: 'PHE/INS/009',
-                safety_warnings: [
-                    'Lebih selamat berbanding organophosphate lain',
-                    'Tetap gunakan PPE yang sesuai',
-                    'Elakkan aplikasi berulang dalam masa singkat',
-                    'Simpan dalam suhu sejuk dan kering'
-                ],
-                environmental_warnings: [
-                    'Toksik kepada lebah pada kepekatan tinggi',
-                    'Relatively safe untuk ikan pada dos rendah',
-                    'Biodegradable dalam persekitaran'
-                ]
-            },
-            aqua_resigen: {
-                name: 'Aqua Resigen',
-                chemical_class: 'Multi-active Pyrethroid',
-                active_ingredient: 'S-bioallethrin 0.14% + Permethrin 10.27% + PBO 9.84%',
-                concentration: 'EW formulation',
-                common_products: ['Aqua Resigen EW', 'Aqua Reslin Super'],
-                fogging_dilution: 0.2,
-                spraying_dilution: 0.08,
-                application_rate_fogging: 0.4,
-                application_rate_spraying: 25,
-                compatible_solvents: ['water'],
-                indoor_outdoor: ['indoor', 'outdoor'],
-                phe_number: 'PHE/INS/010',
-                safety_warnings: [
-                    'Gunakan dengan air sahaja - JANGAN gunakan minyak',
-                    'FFAST technology - enhanced performance dengan air',
-                    'Tanpa bau dan tidak meninggalkan kesan',
-                    'Sesuai untuk aplikasi dalaman dan luaran'
-                ],
-                environmental_warnings: [
-                    'Environmentally-sensitive formulation',
-                    'Kurangkan pencemaran berbanding minyak-based',
-                    'Toksik kepada organisma akuatik - elakkan sumber air'
-                ]
-            },
-            aqua_kothrine: {
-                name: 'Aqua K-Othrine EW',
-                chemical_class: 'Synthetic Pyrethroid',
-                active_ingredient: 'Deltamethrin',
-                concentration: '2.0% w/w EW',
-                common_products: ['Aqua K-Othrine EW', 'K-Othrine Water Base'],
-                fogging_dilution: 0.15,
-                spraying_dilution: 0.03,
-                application_rate_fogging: 0.3,
-                application_rate_spraying: 20,
-                compatible_solvents: ['water'],
-                indoor_outdoor: ['indoor', 'outdoor'],
-                phe_number: 'PHE/INS/011',
-                safety_warnings: [
-                    'Produk berasaskan air - tidak mudah terbakar',
-                    'FFAST technology dengan formula unik',
-                    'WHO-PQ listed dan diluluskan (Ref.No.: 008-001)',
-                    'Elakkan aplikasi ketika kelajuan angin melebihi 10 km/j'
-                ],
-                environmental_warnings: [
-                    'Kurangkan pencemaran dibanding oil-based',
-                    'SANGAT TOKSIK kepada ikan dan organisma akuatik',
-                    'Toksik kepada lebah - elakkan aplikasi semasa musim bunga',
-                    'Jangan aplikasi berhampiran sumber air'
                 ]
             },
             sumithion_l40: {
@@ -937,112 +943,6 @@
                     'Gunakan dengan mesin thermal fogging dan ULV'
                 ]
             },
-            aqua_resigen_bayer: {
-                name: 'Aqua Resigen (Bayer)',
-                chemical_class: 'Multi-active Pyrethroid',
-                active_ingredient: 'Permethrin + S-bioallethrin + PBO',
-                concentration: 'Water-based formulation',
-                common_products: ['Aqua Resigen'],
-                fogging_dilution: 2.0, // 20ml per liter = 2%
-                spraying_dilution: 10.0, // 100ml per liter = 10%
-                application_rate_fogging: 5.0, // 5 litres/ha
-                application_rate_spraying: 500, // 500ml/ha
-                indoor_rate: 35, // 700ml per 2000m³ = 35ml per 100m³
-                compatible_solvents: ['water'],
-                indoor_outdoor: ['indoor', 'outdoor'],
-                phe_number: 'JIRP.P/0120/001',
-                safety_warnings: [
-                    'Sesuai untuk pencairan dalam AIR sahaja',
-                    'Gunakan dengan mesin output tinggi (30-130 liter/jam)',
-                    'Atau mesin output rendah (12-25 liter/jam)',
-                    'Pyrethroids yang dapat terbiodegradasi'
-                ],
-                environmental_warnings: [
-                    'Formulasi seimbang untuk kawalan serangga berkesan',
-                    'Mengandungi piperonyl butoxide untuk aktiviti sinergis',
-                    'WATER ONLY - jangan gunakan dengan diesel/minyak'
-                ]
-            },
-            resigen_bayer: {
-                name: 'Resigen (Bayer)',
-                chemical_class: 'Multi-active Pyrethroid',
-                active_ingredient: 'Permethrin + S-bioallethrin + PBO',
-                concentration: 'Oil/Water formulation',
-                common_products: ['Resigen'],
-                fogging_dilution: 2.0, // 20ml per liter = 2%
-                spraying_dilution: 10.0, // 100ml per liter = 10%
-                application_rate_fogging: 1000, // 1 litre per 2000m³ = 500ml per 1000m³
-                application_rate_spraying: 500, // 500ml/ha for ULV
-                indoor_rate: 50, // 100ml per 2000m³ = 5ml per 100m³
-                compatible_solvents: ['oil', 'water'],
-                indoor_outdoor: ['indoor', 'outdoor'],
-                phe_number: 'JIRP.P/0120/002',
-                safety_warnings: [
-                    'Boleh digunakan dengan diesel/kerosene atau air',
-                    'Untuk aplikasi dalaman gunakan air sahaja',
-                    'Mesin output tinggi: 30-190 liter/jam',
-                    'Mesin output rendah: 12-25 liter/jam'
-                ],
-                environmental_warnings: [
-                    'Kawalan berkesan untuk nyamuk dan lalat',
-                    'Formulasi seimbang dengan piperonyl butoxide',
-                    'Sesuai untuk aplikasi ULV dan thermal fogging'
-                ]
-            },
-            deltacide_bayer: {
-                name: 'Deltacide (Bayer)',
-                chemical_class: 'Synthetic Pyrethroid',
-                active_ingredient: 'Deltamethrin',
-                concentration: 'Emulsifiable concentrate',
-                common_products: ['Deltacide'],
-                fogging_dilution: 1.0, // 10ml per liter = 1%
-                spraying_dilution: 20.0, // 200ml per liter = 20%
-                application_rate_fogging: 10.0, // 10 litre/ha
-                application_rate_spraying: 500, // 500ml/ha
-                indoor_rate: 50, // 1 litre per 2000m³ = 50ml per 100m³
-                compatible_solvents: ['oil', 'water'],
-                indoor_outdoor: ['indoor', 'outdoor'],
-                phe_number: 'JIRP.P/0120/006',
-                safety_warnings: [
-                    'Emulsifiable space spray concentrate',
-                    'Untuk pencairan dalam air dan aplikasi ULV atau thermal fog',
-                    'Semasa rawatan semprot pada kemungkinan tempat serangga',
-                    'Kadar pencairan berbeza mengikut teknik dan spesies'
-                ],
-                environmental_warnings: [
-                    'Berkesan untuk kawalan nyamuk, lalat dan serangga lain',
-                    'Penetrasi yang baik ke tempat persembunyian serangga',
-                    'Sesuai untuk aplikasi dalaman dan luaran'
-                ]
-            },
-            abate_500: {
-                name: 'Abate 500',
-                chemical_class: 'Organophosphate',
-                active_ingredient: 'Temephos',
-                concentration: '47.4% w/w',
-                common_products: ['Abate 500'],
-                fogging_dilution: 0.0, // Not for fogging
-                spraying_dilution: 0.0, // Not for spraying
-                application_rate_fogging: 0.0,
-                application_rate_spraying: 0.0,
-                larvicide_rate: 12.0, // 12ml per 10 litres water
-                larvicide_rate_per_hectare: 120, // 120ml per hectare
-                ulv_adult_rate: 400, // 400ml ULV for adults
-                compatible_solvents: ['water'],
-                indoor_outdoor: ['outdoor'],
-                phe_number: 'Official MOH Larvicide',
-                safety_warnings: [
-                    'Khusus untuk kawalan larva (Culex quinquefasciatus, Aedes aegypti)',
-                    'Juga berkesan untuk nyamuk dewasa dengan ULV',
-                    'Gunakan hanya mengikut arahan pada label',
-                    'Bertindak melalui ingestion atau sentuhan'
-                ],
-                environmental_warnings: [
-                    'Untuk air bertakung (kolam, tasik, marshes, longkang)',
-                    'Kawasan pembiakan larva sahaja',
-                    'Aktiviti larvicide kekal selama 4 minggu minimum'
-                ]
-            },
             abate_11g: {
                 name: 'Abate 1.1G',
                 chemical_class: 'Organophosphate',
@@ -1069,6 +969,110 @@
                     'Khusus untuk tempat pembiakan larva',
                     'Biodegradable dalam persekitaran akuatik'
                 ]
+            },
+            deltacide: {
+                name: 'Deltacide',
+                chemical_class: 'Synthetic Pyrethroid',
+                active_ingredient: 'Deltamethrin',
+                concentration: 'Emulsifiable concentrate',
+                common_products: ['Deltacide'],
+                fogging_dilution: 1.0, // 10ml per liter = 1%
+                spraying_dilution: 20.0, // 200ml per liter = 20%
+                application_rate_fogging: 10.0, // 10 litre/ha
+                application_rate_spraying: 500, // 500ml/ha
+                indoor_rate: 50, // 1 litre per 2000m³ = 50ml per 100m³
+                compatible_solvents: ['oil', 'water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'JIRP.P/0120/006',
+                safety_warnings: [
+                    'Emulsifiable space spray concentrate',
+                    'Untuk pencairan dalam air dan aplikasi ULV atau thermal fog',
+                    'Semasa rawatan semprot pada kemungkinan tempat serangga',
+                    'Kadar pencairan berbeza mengikut teknik dan spesies'
+                ],
+                environmental_warnings: [
+                    'Berkesan untuk kawalan nyamuk, lalat dan serangga lain',
+                    'Penetrasi yang baik ke tempat persembunyian serangga',
+                    'Sesuai untuk aplikasi dalaman dan luaran'
+                ]
+            },
+            aqua_kothrine: {
+                name: 'Aqua K-Othrine EW',
+                chemical_class: 'Synthetic Pyrethroid',
+                active_ingredient: 'Deltamethrin',
+                concentration: '2.0% w/w EW',
+                common_products: ['Aqua K-Othrine EW'],
+                fogging_dilution: 0.15,
+                spraying_dilution: 0.03,
+                application_rate_fogging: 0.3,
+                application_rate_spraying: 20,
+                compatible_solvents: ['water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'PHE/INS/011',
+                safety_warnings: [
+                    'Produk berasaskan air - tidak mudah terbakar',
+                    'FFAST technology dengan formula unik',
+                    'WHO-PQ listed dan diluluskan (Ref.No.: 008-001)',
+                    'Elakkan aplikasi ketika kelajuan angin melebihi 10 km/j'
+                ],
+                environmental_warnings: [
+                    'Kurangkan pencemaran dibanding oil-based',
+                    'SANGAT TOKSIK kepada ikan dan organisma akuatik',
+                    'Toksik kepada lebah - elakkan aplikasi semasa musim bunga',
+                    'Jangan aplikasi berhampiran sumber air'
+                ]
+            },
+            aqua_resigen: {
+                name: 'Aqua Resigen',
+                chemical_class: 'Multi-active Pyrethroid',
+                active_ingredient: 'Permethrin + S-bioallethrin + PBO',
+                concentration: 'Water-based formulation',
+                common_products: ['Aqua Resigen'],
+                fogging_dilution: 2.0, // 20ml per liter = 2%
+                spraying_dilution: 10.0, // 100ml per liter = 10%
+                application_rate_fogging: 5.0, // 5 litres/ha
+                application_rate_spraying: 500, // 500ml/ha
+                indoor_rate: 35, // 700ml per 2000m³ = 35ml per 100m³
+                compatible_solvents: ['water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'JIRP.P/0120/001',
+                safety_warnings: [
+                    'Sesuai untuk pencairan dalam AIR sahaja',
+                    'Gunakan dengan mesin output tinggi (30-130 liter/jam)',
+                    'Atau mesin output rendah (12-25 liter/jam)',
+                    'Pyrethroids yang dapat terbiodegradasi'
+                ],
+                environmental_warnings: [
+                    'Formulasi seimbang untuk kawalan serangga berkesan',
+                    'Mengandungi piperonyl butoxide untuk aktiviti sinergis',
+                    'WATER ONLY - jangan gunakan dengan diesel/minyak'
+                ]
+            },
+            resigen: {
+                name: 'Resigen',
+                chemical_class: 'Multi-active Pyrethroid',
+                active_ingredient: 'Permethrin + S-bioallethrin + PBO',
+                concentration: 'Oil/Water formulation',
+                common_products: ['Resigen'],
+                fogging_dilution: 2.0, // 20ml per liter = 2%
+                spraying_dilution: 10.0, // 100ml per liter = 10%
+                application_rate_fogging: 1000, // 1 litre per 2000m³ = 500ml per 1000m³
+                application_rate_spraying: 500, // 500ml/ha for ULV
+                indoor_rate: 50, // 100ml per 2000m³ = 5ml per 100m³
+                compatible_solvents: ['oil', 'water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'JIRP.P/0120/002',
+                safety_warnings: [
+                    'Boleh digunakan dengan diesel/kerosene atau air',
+                    'Untuk aplikasi dalaman gunakan air sahaja',
+                    'Mesin output tinggi: 30-190 liter/jam',
+                    'Mesin output rendah: 12-25 liter/jam'
+                ],
+                environmental_warnings: [
+                    'Kawalan berkesan untuk nyamuk dan lalat',
+                    'Formulasi seimbang dengan piperonyl butoxide',
+                    'Sesuai untuk aplikasi ULV dan thermal fogging'
+                ]
             }
         };
 
@@ -1083,6 +1087,45 @@
         // Global variables
         let customProducts = [];
         let editingProduct = null;
+        let currentPage = 'input'; // Track current page
+
+        // Page navigation functions
+        function showInputPage() {
+            document.getElementById('input-page').style.display = 'block';
+            document.getElementById('results-page').style.display = 'none';
+            
+            // Update step indicators
+            document.getElementById('step-1').classList.add('active');
+            document.getElementById('step-1').classList.remove('completed');
+            document.getElementById('step-2').classList.remove('active', 'completed');
+            
+            currentPage = 'input';
+        }
+
+        function showResultsPage() {
+            document.getElementById('input-page').style.display = 'none';
+            document.getElementById('results-page').style.display = 'block';
+            
+            // Update step indicators
+            document.getElementById('step-1').classList.remove('active');
+            document.getElementById('step-1').classList.add('completed');
+            document.getElementById('step-2').classList.add('active');
+            
+            currentPage = 'results';
+        }
+
+        // Print results function
+        function printResults() {
+            // Hide navigation elements for printing
+            const noprint = document.querySelectorAll('.no-print');
+            noprint.forEach(el => el.style.display = 'none');
+            
+            // Print only the results page
+            window.print();
+            
+            // Restore navigation elements
+            noprint.forEach(el => el.style.display = '');
+        }
 
         // Load custom products from localStorage
         function loadCustomProducts() {
@@ -1222,6 +1265,7 @@
                 `;
             }
         }
+        
         function updateProductInfo() {
             const selectedValue = document.getElementById('insecticide_type').value;
             const solventType = document.getElementById('solvent_type').value;
@@ -1263,8 +1307,8 @@
 
                 // Update other warnings
                 let warningsHtml = '';
-                if (selectedValue === 'temephos_50ec' && applicationMethod !== 'larvicide') {
-                    warningsHtml = '<p class="text-sm text-orange-600 mt-1">⚠️ Temephos adalah khusus untuk kawalan larva sahaja</p>';
+                if ((selectedValue === 'abate_500' || selectedValue === 'abate_11g') && applicationMethod !== 'larvicide') {
+                    warningsHtml = '<p class="text-sm text-orange-600 mt-1">⚠️ Abate adalah khusus untuk kawalan larva sahaja</p>';
                 }
                 
                 if (selectedValue.startsWith('custom_') && applicationMethod === 'larvicide' && !product.larvicide_rate) {
@@ -1285,7 +1329,7 @@
             document.getElementById('bilangan_rumah').value = '';
             document.getElementById('isipadu_rumah').value = '';
             document.getElementById('keluasan_kawasan').value = '';
-            document.getElementById('insecticide_type').value = 'malathion_57ec';
+            document.getElementById('insecticide_type').value = 'fyfanon_ulv';
             document.getElementById('application_method').value = 'fogging';
             document.getElementById('solvent_type').value = 'water';
             document.getElementById('location_type').value = 'outdoor';
@@ -1296,8 +1340,10 @@
             const thermalOnly = document.getElementById('thermal_only');
             if (thermalOnly) thermalOnly.checked = true;
             
-            document.getElementById('results-container').style.display = 'none';
+            // Clear results and go back to input page
+            document.getElementById('results-container').innerHTML = '';
             document.getElementById('no-results').style.display = 'block';
+            showInputPage();
             
             updateCalculationMode();
             updateProductInfo();
@@ -1428,7 +1474,7 @@
                 
                 // Reset selection if deleted product was selected
                 if (document.getElementById('insecticide_type').value === productId) {
-                    document.getElementById('insecticide_type').value = 'malathion_57ec';
+                    document.getElementById('insecticide_type').value = 'fyfanon_ulv';
                     updateProductInfo();
                 }
                 
@@ -1520,8 +1566,8 @@
                 return;
             }
 
-            if (insecticideType === 'temephos_50ec' && applicationMethod !== 'larvicide') {
-                alert('Temephos adalah khusus untuk kawalan larva sahaja. Sila pilih produk lain untuk fogging/spraying.');
+            if ((insecticideType === 'abate_500' || insecticideType === 'abate_11g') && applicationMethod !== 'larvicide') {
+                alert('Abate adalah khusus untuk kawalan larva sahaja. Sila pilih produk lain untuk fogging/spraying.');
                 return;
             }
 
@@ -1704,6 +1750,9 @@
                 safetyWarnings: insecticide.safety_warnings || [],
                 environmentalWarnings: insecticide.environmental_warnings || []
             });
+
+            // Switch to results page after calculation
+            showResultsPage();
         }
 
         // Helper function for standard calculations
@@ -2066,7 +2115,6 @@
             }
 
             container.innerHTML = resultsHtml;
-            container.style.display = 'block';
             noResults.style.display = 'none';
         }
 
@@ -2087,6 +2135,11 @@
             // Button event listeners
             document.getElementById('btn-calculate').addEventListener('click', calculateDosage);
             document.getElementById('btn-reset').addEventListener('click', resetForm);
+            
+            // Navigation button listeners
+            document.getElementById('btn-back-to-input').addEventListener('click', showInputPage);
+            document.getElementById('btn-go-to-input').addEventListener('click', showInputPage);
+            document.getElementById('btn-print-results').addEventListener('click', printResults);
             
             document.getElementById('btn-add-product').addEventListener('click', function() {
                 document.getElementById('add-product-modal').classList.add('show');
