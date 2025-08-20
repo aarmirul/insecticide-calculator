@@ -10,6 +10,157 @@
             padding: 0;
             box-sizing: border-box;
         }
+
+        function exportData() {
+            const data = {
+                totalBaleCost: totalBaleCost,
+                targetMultiplier: targetMultiplier,
+                targetSales: targetSales,
+                sales: sales,
+                saleCounter: saleCounter,
+                isSetup: isSetup,
+                exportDate: new Date().toLocaleString(),
+                baleData: []
+            };
+            
+            // Save bale input data
+            for (let i = 1; i <= baleCount + 10; i++) {
+                const baleElement = document.getElementById(`bale-cost-${i}`);
+                if (baleElement && baleElement.value) {
+                    data.baleData.push({
+                        id: i,
+                        cost: parseFloat(baleElement.value)
+                    });
+                }
+            }
+            
+            const dataString = JSON.stringify(data, null, 2);
+            
+            // Create downloadable file
+            const blob = new Blob([dataString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `shopee_live_data_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // Also show data in alert for manual copy
+            const summary = `📊 BACKUP DATA (Copy this text to save):
+            
+${dataString}
+
+📝 Quick Summary:
+• Bale Cost: RM ${totalBaleCost.toFixed(2)}
+• Target: RM ${targetSales.toFixed(2)} (${targetMultiplier}x)
+• Sales Made: ${sales.filter(s => s.locked).length} items
+• Current Sales: RM ${sales.filter(s => s.locked).reduce((sum, s) => sum + s.price, 0).toFixed(2)}
+• Export Date: ${data.exportDate}`;
+            
+            if (confirm('Data saved as file! Do you also want to see the backup text to copy manually?')) {
+                alert(summary);
+            }
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        loadDataFromObject(data);
+                    } catch (error) {
+                        alert('Invalid file format! Please select a valid backup file.');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            // Also allow manual text input
+            const manualInput = prompt(`📂 LOAD DATA OPTIONS:
+
+1. Click OK to select backup file, OR
+2. Paste your backup text here:`);
+            
+            if (manualInput && manualInput.trim()) {
+                try {
+                    const data = JSON.parse(manualInput.trim());
+                    loadDataFromObject(data);
+                    return;
+                } catch (error) {
+                    alert('Invalid backup text format!');
+                    return;
+                }
+            }
+            
+            input.click();
+        }
+
+        function loadDataFromObject(data) {
+            if (confirm(`Load backup data from ${data.exportDate || 'unknown date'}?\n\nThis will replace your current data:\n• Bale Cost: RM ${data.totalBaleCost?.toFixed(2) || '0.00'}\n• Sales: ${data.sales?.filter(s => s.locked).length || 0} items`)) {
+                // Restore data
+                totalBaleCost = data.totalBaleCost || 0;
+                targetMultiplier = data.targetMultiplier || 2;
+                targetSales = data.targetSales || 0;
+                sales = data.sales || [];
+                saleCounter = data.saleCounter || 0;
+                isSetup = data.isSetup || false;
+                
+                // Restore form data
+                document.getElementById('target-multiplier').value = targetMultiplier;
+                
+                // Clear and restore bale inputs
+                document.getElementById('bale-inputs').innerHTML = '';
+                baleCount = 0;
+                
+                if (data.baleData && data.baleData.length > 0) {
+                    data.baleData.forEach(bale => {
+                        baleCount++;
+                        const baleInputs = document.getElementById('bale-inputs');
+                        const newBaleInput = document.createElement('div');
+                        newBaleInput.className = 'bale-input';
+                        newBaleInput.id = `bale-input-${baleCount}`;
+                        newBaleInput.innerHTML = `
+                            <input type="number" placeholder="Bale Cost (RM)" id="bale-cost-${baleCount}" step="0.01" value="${bale.cost}">
+                            <button onclick="removeBale(${baleCount})" class="btn-danger btn-small" ${baleCount === 1 ? 'style="display: none;"' : ''}>❌</button>
+                        `;
+                        baleInputs.appendChild(newBaleInput);
+                    });
+                } else {
+                    // Add default empty input
+                    baleCount = 1;
+                    document.getElementById('bale-inputs').innerHTML = `
+                        <div class="bale-input" id="bale-input-1">
+                            <input type="number" placeholder="Bale Cost (RM)" id="bale-cost-1" step="0.01">
+                            <button onclick="removeBale(1)" class="btn-danger btn-small" style="display: none;">❌</button>
+                        </div>
+                    `;
+                }
+                
+                if (isSetup) {
+                    displayCostSummary();
+                    document.querySelector(`[onclick="showPage('live')"]`).style.opacity = '1';
+                    document.querySelector(`[onclick="showPage('summary')"]`).style.opacity = '1';
+                }
+                
+                // Update current page
+                if (currentPage === 'live') {
+                    updateLivePage();
+                } else if (currentPage === 'summary') {
+                    updateSummaryPage();
+                }
+                
+                alert(`✅ Data loaded successfully!\n\n📊 Summary:\n• Bale Cost: RM ${totalBaleCost.toFixed(2)}\n• Target: RM ${targetSales.toFixed(2)}\n• Sales: ${sales.filter(s => s.locked).length} items\n• Current Total: RM ${sales.filter(s => s.locked).reduce((sum, s) => sum + s.price, 0).toFixed(2)}`);
+            }
+        }
         
         body {
             font-family: Arial, sans-serif;
@@ -485,7 +636,12 @@
                 <div id="target-display" class="target-display hidden"></div>
             </div>
             
-            <div style="text-align: center;">
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button onclick="exportData()" class="btn-success" style="flex: 1;">💾 Save Data</button>
+                <button onclick="importData()" class="btn-warning" style="flex: 1;">📂 Load Data</button>
+            </div>
+            
+            <div style="text-align: center; margin-top: 15px;">
                 <button onclick="resetAll()" class="btn-danger">🔄 Reset All Data</button>
             </div>
         </div>
@@ -578,8 +734,9 @@
                     </div>
                 </div>
                 
-                <div style="text-align: center;">
-                    <button onclick="addMoreBales()" class="btn-warning">📦 Add More Bales</button>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button onclick="exportData()" class="btn-success" style="flex: 1;">💾 Save Data</button>
+                    <button onclick="addMoreBales()" class="btn-warning" style="flex: 1;">📦 Add More Bales</button>
                 </div>
             </div>
         </div>
