@@ -25,6 +25,7 @@
             border-radius: 15px;
             padding: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            min-height: calc(100vh - 20px);
         }
         
         h1 {
@@ -32,6 +33,49 @@
             color: #333;
             margin-bottom: 20px;
             font-size: 24px;
+        }
+        
+        /* Navigation */
+        .nav-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 25px;
+            background: #f1f3f4;
+            border-radius: 10px;
+            padding: 5px;
+        }
+        
+        .nav-tab {
+            flex: 1;
+            padding: 12px 8px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: bold;
+            color: #666;
+        }
+        
+        .nav-tab.active {
+            background: #667eea;
+            color: white;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+        
+        .nav-tab:hover:not(.active) {
+            background: #e2e8f0;
+            color: #333;
+        }
+        
+        /* Pages */
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
         }
         
         .section {
@@ -48,6 +92,7 @@
             font-size: 18px;
         }
         
+        /* Setup Page Styles */
         .bale-input {
             display: flex;
             gap: 10px;
@@ -127,6 +172,11 @@
             background: #b7791f;
         }
         
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        
         .cost-display {
             background: #e6fffa;
             padding: 10px;
@@ -160,13 +210,24 @@
             margin-top: 10px;
         }
         
+        /* Live Sales Page Styles */
+        .status-bar {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
         .price-suggestion {
             background: #fed7d7;
             color: #c53030;
-            padding: 8px;
-            border-radius: 5px;
+            padding: 10px;
+            border-radius: 8px;
             text-align: center;
-            margin: 10px 0;
+            margin-bottom: 15px;
             font-weight: bold;
             border: 2px solid #feb2b2;
         }
@@ -180,41 +241,52 @@
         .sale-entry {
             display: flex;
             gap: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
         .sale-entry input {
-            padding: 12px;
+            padding: 15px;
             border: 2px solid #ddd;
-            border-radius: 5px;
+            border-radius: 8px;
             font-size: 16px;
+            font-weight: bold;
         }
         
         .sale-entry input[type="number"] {
-            width: 100px;
+            width: 120px;
         }
         
         .sale-entry input[type="text"] {
             flex: 1;
         }
         
+        .sale-entry button {
+            padding: 15px 25px;
+            font-size: 18px;
+        }
+        
         .sales-list {
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
             background: white;
-            border-radius: 8px;
-            padding: 10px;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
         .sale-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px;
-            margin-bottom: 5px;
+            padding: 12px;
+            margin-bottom: 8px;
             background: #f7fafc;
-            border-radius: 5px;
-            border-left: 3px solid #48bb78;
+            border-radius: 8px;
+            border-left: 4px solid #48bb78;
         }
         
         .sale-item.unlocked {
@@ -227,68 +299,132 @@
             flex: 1;
         }
         
+        .sale-price {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .sale-buyer {
+            font-size: 14px;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .sale-time {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        /* Summary Page Styles */
+        .summary-grid {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .summary-card h4 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            font-weight: normal;
+        }
+        
+        .summary-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .summary-value.profit {
+            color: #38a169;
+        }
+        
+        .summary-value.loss {
+            color: #e53e3e;
+        }
+        
+        .progress-bar {
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+            height: 8px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #38a169);
+            transition: width 0.5s ease;
+        }
+        
         .buyer-totals {
             background: white;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 15px;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
         }
         
         .buyer-row {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
         }
         
         .buyer-row:last-child {
             border-bottom: none;
             font-weight: bold;
-            background: #e6fffa;
-            margin: 10px -15px -15px -15px;
-            padding: 15px;
-            border-radius: 0 0 8px 8px;
+            background: #f0fff4;
+            margin: 15px -20px -20px -20px;
+            padding: 20px;
+            border-radius: 0 0 12px 12px;
+            border-top: 2px solid #38a169;
         }
         
-        .summary {
-            background: #e6fffa;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
+        .buyer-name {
+            font-weight: bold;
+            color: #2d3748;
         }
         
-        .summary-item {
-            margin: 5px 0;
-            font-size: 18px;
+        .buyer-items {
+            font-size: 12px;
+            color: #666;
         }
         
-        .profit {
+        .buyer-total {
+            font-weight: bold;
             color: #38a169;
-            font-weight: bold;
-        }
-        
-        .loss {
-            color: #e53e3e;
-            font-weight: bold;
+            font-size: 16px;
         }
         
         .hidden {
             display: none;
         }
         
-        .btn-small {
-            padding: 5px 10px;
-            font-size: 12px;
+        .empty-state {
+            text-align: center;
+            color: #666;
+            padding: 40px 20px;
+            background: #f7fafc;
+            border-radius: 10px;
+            border: 2px dashed #cbd5e0;
         }
         
-        .session-info {
-            background: #ebf8ff;
-            padding: 10px;
-            border-radius: 8px;
+        .empty-state-icon {
+            font-size: 48px;
             margin-bottom: 15px;
-            text-align: center;
-            color: #2c5282;
-            font-weight: bold;
         }
         
         @media (max-width: 480px) {
@@ -297,12 +433,16 @@
             }
             
             .sale-entry {
-                flex-wrap: wrap;
+                flex-direction: column;
             }
             
-            .sale-entry input[type="text"] {
+            .sale-entry input[type="number"] {
                 width: 100%;
-                margin-top: 5px;
+            }
+            
+            .nav-tab {
+                font-size: 12px;
+                padding: 10px 5px;
             }
         }
     </style>
@@ -311,98 +451,137 @@
     <div class="container">
         <h1>🛍️ Shopee Live Tracker</h1>
         
-        <!-- Setup Section -->
-        <div class="section" id="setup-section">
-            <h3>📦 Setup Bale Costs & Target</h3>
-            
-            <div class="target-input">
-                <label>Target Profit:</label>
-                <input type="number" id="target-multiplier" placeholder="2" step="0.1" min="1">
-                <label>x bale cost</label>
-            </div>
-            
-            <div id="bale-inputs">
-                <div class="bale-input">
-                    <input type="number" placeholder="Bale Cost (RM)" id="bale-cost-1" step="0.01">
-                    <button onclick="removeBale(1)" class="btn-danger btn-small" style="display: none;">❌</button>
-                </div>
-            </div>
-            <button onclick="addBaleInput()">+ Add Another Bale</button>
-            <button onclick="setupComplete()" class="btn-success">Start Tracking</button>
-            
-            <div id="cost-display" class="cost-display hidden"></div>
-            <div id="target-display" class="target-display hidden"></div>
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showPage('setup')">📦 Setup</button>
+            <button class="nav-tab" onclick="showPage('live')">💰 Live Sales</button>
+            <button class="nav-tab" onclick="showPage('summary')">📊 Summary</button>
         </div>
         
-        <!-- Live Sale Section -->
-        <div class="section hidden" id="sale-section">
-            <h3>💰 Live Sales</h3>
-            
-            <div id="session-info" class="session-info">
-                Session in progress - sales will accumulate across multiple lives
-            </div>
-            
-            <div id="price-suggestion"></div>
-            
-            <div class="sale-entry">
-                <input type="number" id="sale-price" placeholder="Price (RM)" step="0.01">
-                <input type="text" id="buyer-name" placeholder="Buyer Username">
-                <button onclick="addSale()" class="btn-success">Lock</button>
-            </div>
-            
-            <div class="sales-list" id="sales-list">
-                <div style="text-align: center; color: #666; padding: 20px;">
-                    No sales yet. Start your live session!
+        <!-- Setup Page -->
+        <div id="setup-page" class="page active">
+            <div class="section">
+                <h3>📦 Bale Costs & Target Profit</h3>
+                
+                <div class="target-input">
+                    <label>Target Profit:</label>
+                    <input type="number" id="target-multiplier" placeholder="2" step="0.1" min="1">
+                    <label>x bale cost</label>
                 </div>
+                
+                <div id="bale-inputs">
+                    <div class="bale-input" id="bale-input-1">
+                        <input type="number" placeholder="Bale Cost (RM)" id="bale-cost-1" step="0.01">
+                        <button onclick="removeBale(1)" class="btn-danger btn-small" style="display: none;">❌</button>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button onclick="addBaleInput()" style="flex: 1;">+ Add Bale</button>
+                    <button onclick="setupComplete()" class="btn-success" style="flex: 1;">Save Setup</button>
+                </div>
+                
+                <div id="cost-display" class="cost-display hidden"></div>
+                <div id="target-display" class="target-display hidden"></div>
+            </div>
+            
+            <div style="text-align: center;">
+                <button onclick="resetAll()" class="btn-danger">🔄 Reset All Data</button>
             </div>
         </div>
         
-        <!-- Buyer Totals -->
-        <div class="section hidden" id="totals-section">
-            <h3>👥 Buyer Totals</h3>
-            <div class="buyer-totals" id="buyer-totals">
-                <div style="text-align: center; color: #666;">
-                    No buyers yet
-                </div>
+        <!-- Live Sales Page -->
+        <div id="live-page" class="page">
+            <div id="not-setup-message" class="empty-state">
+                <div class="empty-state-icon">⚠️</div>
+                <h3>Setup Required</h3>
+                <p>Please complete the setup first before starting live sales.</p>
+                <button onclick="showPage('setup')" class="btn-warning" style="margin-top: 15px;">Go to Setup</button>
             </div>
-        </div>
-        
-        <!-- Overall Summary -->
-        <div class="section hidden" id="summary-section">
-            <h3>📊 Overall Summary</h3>
-            <div class="summary">
-                <div class="summary-item">
-                    Total Sales: <strong>RM <span id="total-sales">0.00</span></strong>
+            
+            <div id="live-content" class="hidden">
+                <div class="status-bar" id="status-bar">
+                    🎯 Target: RM <span id="live-target">0.00</span> | 
+                    💰 Current: RM <span id="live-current">0.00</span> | 
+                    📈 <span id="live-progress">0%</span>
                 </div>
-                <div class="summary-item">
-                    Total Bale Costs: <strong>RM <span id="total-bale-cost">0.00</span></strong>
+                
+                <div id="price-suggestion"></div>
+                
+                <div class="sale-entry">
+                    <input type="number" id="sale-price" placeholder="Price (RM)" step="0.01">
+                    <input type="text" id="buyer-name" placeholder="Buyer Username">
+                    <button onclick="addSale()" class="btn-success">LOCK</button>
                 </div>
-                <div class="summary-item">
-                    Target Sales: <strong>RM <span id="target-sales">0.00</span></strong>
-                </div>
-                <div class="summary-item profit">
-                    Actual Profit: <strong>RM <span id="actual-profit">0.00</span></strong>
-                </div>
-                <div class="summary-item">
-                    Items Sold: <strong><span id="items-sold">0</span> pieces</strong>
-                </div>
-                <div class="summary-item" id="progress-status">
-                    Progress: <strong><span id="progress-percentage">0</span>% of target</strong>
+                
+                <div class="sales-list" id="sales-list">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🛒</div>
+                        <h3>Ready for Live!</h3>
+                        <p>Start entering your sales above</p>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <!-- Action Buttons -->
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button onclick="addMoreBales()" class="btn-warning" id="add-bales-btn" style="display: none;">
-                📦 Add More Bales
-            </button>
-            <button onclick="newSession()" class="btn-warning" id="new-session-btn" style="display: none;">
-                🆕 New Session
-            </button>
-            <button onclick="resetAll()" class="btn-danger" style="flex: 1;">
-                🔄 Reset All
-            </button>
+        <!-- Summary Page -->
+        <div id="summary-page" class="page">
+            <div id="summary-not-setup" class="empty-state">
+                <div class="empty-state-icon">📊</div>
+                <h3>No Data Yet</h3>
+                <p>Complete setup and make some sales to see your summary.</p>
+            </div>
+            
+            <div id="summary-content" class="hidden">
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <h4>Total Sales</h4>
+                        <div class="summary-value">RM <span id="total-sales">0.00</span></div>
+                    </div>
+                    
+                    <div class="summary-card">
+                        <h4>Target Sales</h4>
+                        <div class="summary-value">RM <span id="target-sales">0.00</span></div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card">
+                        <h4>Bale Costs</h4>
+                        <div class="summary-value">RM <span id="total-bale-cost">0.00</span></div>
+                    </div>
+                    
+                    <div class="summary-card">
+                        <h4>Actual Profit</h4>
+                        <div class="summary-value profit" id="profit-display">RM <span id="actual-profit">0.00</span></div>
+                    </div>
+                    
+                    <div class="summary-card">
+                        <h4>Items Sold</h4>
+                        <div class="summary-value"><span id="items-sold">0</span> pcs</div>
+                    </div>
+                    
+                    <div class="summary-card">
+                        <h4>Progress</h4>
+                        <div class="summary-value" id="progress-text">0%</div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>👥 Buyer Breakdown</h3>
+                    <div class="buyer-totals" id="buyer-totals">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">👤</div>
+                            <p>No buyers yet</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center;">
+                    <button onclick="addMoreBales()" class="btn-warning">📦 Add More Bales</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -414,6 +593,26 @@
         let baleCount = 1;
         let saleCounter = 0;
         let isSetup = false;
+        let currentPage = 'setup';
+
+        function showPage(page) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            
+            // Show selected page
+            document.getElementById(page + '-page').classList.add('active');
+            document.querySelector(`[onclick="showPage('${page}')"]`).classList.add('active');
+            
+            currentPage = page;
+            
+            // Update page content
+            if (page === 'live') {
+                updateLivePage();
+            } else if (page === 'summary') {
+                updateSummaryPage();
+            }
+        }
 
         function addBaleInput() {
             baleCount++;
@@ -430,7 +629,8 @@
 
         function removeBale(id) {
             if (baleCount <= 1) return;
-            document.getElementById(`bale-input-${id}`).remove();
+            const element = document.getElementById(`bale-input-${id}`);
+            if (element) element.remove();
         }
 
         function setupComplete() {
@@ -438,7 +638,7 @@
             let totalCost = 0;
             let validBales = 0;
 
-            for (let i = 1; i <= baleCount; i++) {
+            for (let i = 1; i <= baleCount + 10; i++) { // Check more IDs in case some were removed
                 const baleElement = document.getElementById(`bale-cost-${i}`);
                 if (!baleElement) continue;
                 
@@ -460,22 +660,23 @@
             isSetup = true;
 
             displayCostSummary();
-            showSaleSections();
             
-            document.getElementById('sale-price').focus();
+            // Enable live sales tab
+            document.querySelector(`[onclick="showPage('live')"]`).style.opacity = '1';
+            document.querySelector(`[onclick="showPage('summary')"]`).style.opacity = '1';
+            
+            alert('Setup complete! You can now start live sales.');
         }
 
         function displayCostSummary() {
             let costHtml = '';
-            let runningTotal = 0;
             
-            for (let i = 1; i <= baleCount; i++) {
+            for (let i = 1; i <= baleCount + 10; i++) {
                 const baleElement = document.getElementById(`bale-cost-${i}`);
                 if (!baleElement) continue;
                 
                 const cost = parseFloat(baleElement.value) || 0;
                 if (cost > 0) {
-                    runningTotal += cost;
                     costHtml += `<div class="cost-item"><span>Bale ${i}:</span><span>RM ${cost.toFixed(2)}</span></div>`;
                 }
             }
@@ -486,18 +687,32 @@
             document.getElementById('cost-display').classList.remove('hidden');
             
             document.getElementById('target-display').innerHTML = 
-                `Target Sales: RM ${targetSales.toFixed(2)} (${targetMultiplier}x cost)`;
+                `🎯 Target Sales: RM ${targetSales.toFixed(2)} (${targetMultiplier}x cost)`;
             document.getElementById('target-display').classList.remove('hidden');
         }
 
-        function showSaleSections() {
-            document.getElementById('sale-section').classList.remove('hidden');
-            document.getElementById('totals-section').classList.remove('hidden');
-            document.getElementById('summary-section').classList.remove('hidden');
-            document.getElementById('add-bales-btn').style.display = 'block';
-            document.getElementById('new-session-btn').style.display = 'block';
+        function updateLivePage() {
+            if (!isSetup) {
+                document.getElementById('not-setup-message').classList.remove('hidden');
+                document.getElementById('live-content').classList.add('hidden');
+                return;
+            }
             
-            updateSummary();
+            document.getElementById('not-setup-message').classList.add('hidden');
+            document.getElementById('live-content').classList.remove('hidden');
+            
+            updateLiveStats();
+            updatePriceSuggestion();
+            updateSalesListLive();
+        }
+
+        function updateLiveStats() {
+            const currentSales = sales.filter(s => s.locked).reduce((sum, s) => sum + s.price, 0);
+            const progressPercentage = targetSales > 0 ? (currentSales / targetSales * 100) : 0;
+            
+            document.getElementById('live-target').textContent = targetSales.toFixed(2);
+            document.getElementById('live-current').textContent = currentSales.toFixed(2);
+            document.getElementById('live-progress').textContent = progressPercentage.toFixed(1) + '%';
         }
 
         function updatePriceSuggestion() {
@@ -511,17 +726,50 @@
                 return;
             }
             
-            // Suggest minimum price based on remaining target
-            const itemsRemaining = Math.max(1, 100 - itemsSold); // Assume max 100 items per session
+            const itemsRemaining = Math.max(1, 50 - itemsSold); // Assume 50 more items
             const suggestedPrice = remaining / itemsRemaining;
             
             document.getElementById('price-suggestion').innerHTML = 
-                `<div class="price-suggestion">💡 Suggested min price: RM ${suggestedPrice.toFixed(2)} to reach target</div>`;
+                `<div class="price-suggestion">💡 Suggested min: RM ${suggestedPrice.toFixed(2)} (${itemsRemaining} items left to reach target)</div>`;
+        }
+
+        function updateSalesListLive() {
+            const salesList = document.getElementById('sales-list');
+            
+            if (sales.length === 0) {
+                salesList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🛒</div>
+                        <h3>Ready for Live!</h3>
+                        <p>Start entering your sales above</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const recentSales = [...sales].reverse().slice(0, 10); // Show last 10 sales
+            salesList.innerHTML = recentSales.map(sale => `
+                <div class="sale-item ${!sale.locked ? 'unlocked' : ''}">
+                    <div class="sale-info">
+                        <div class="sale-price">RM ${sale.price.toFixed(2)}</div>
+                        <div class="sale-buyer">${sale.buyer}</div>
+                        <div class="sale-time">${sale.timestamp} ${!sale.locked ? '(UNLOCKED)' : ''}</div>
+                    </div>
+                    <button onclick="unlockSale(${sale.id})" class="btn-small ${sale.locked ? 'btn-danger' : 'btn-success'}">
+                        ${sale.locked ? 'Unlock' : 'Lock'}
+                    </button>
+                </div>
+            `).join('');
+            
+            if (sales.length > 10) {
+                salesList.innerHTML += `<div style="text-align: center; padding: 10px; color: #666; font-style: italic;">... and ${sales.length - 10} more sales</div>`;
+            }
         }
 
         function addSale() {
             if (!isSetup) {
                 alert('Please complete setup first!');
+                showPage('setup');
                 return;
             }
 
@@ -552,7 +800,7 @@
             document.getElementById('sale-price').value = '';
             document.getElementById('buyer-name').value = '';
             
-            updateDisplay();
+            updateLivePage();
             
             // Focus back on price input
             document.getElementById('sale-price').focus();
@@ -562,42 +810,49 @@
             const sale = sales.find(s => s.id === id);
             if (sale) {
                 sale.locked = !sale.locked;
-                updateDisplay();
+                if (currentPage === 'live') {
+                    updateLivePage();
+                } else if (currentPage === 'summary') {
+                    updateSummaryPage();
+                }
             }
         }
 
-        function updateDisplay() {
-            updateSalesList();
-            updateBuyerTotals();
-            updateSummary();
-            updatePriceSuggestion();
-        }
-
-        function updateSalesList() {
-            const salesList = document.getElementById('sales-list');
-            
-            if (sales.length === 0) {
-                salesList.innerHTML = `
-                    <div style="text-align: center; color: #666; padding: 20px;">
-                        No sales yet. Start your live session!
-                    </div>
-                `;
+        function updateSummaryPage() {
+            if (!isSetup || sales.length === 0) {
+                document.getElementById('summary-not-setup').classList.remove('hidden');
+                document.getElementById('summary-content').classList.add('hidden');
                 return;
             }
+            
+            document.getElementById('summary-not-setup').classList.add('hidden');
+            document.getElementById('summary-content').classList.remove('hidden');
+            
+            const lockedSales = sales.filter(sale => sale.locked);
+            const currentSales = lockedSales.reduce((sum, sale) => sum + sale.price, 0);
+            const actualProfit = currentSales - totalBaleCost;
+            const progressPercentage = targetSales > 0 ? (currentSales / targetSales * 100) : 0;
 
-            // Show recent sales first
-            const recentSales = [...sales].reverse();
-            salesList.innerHTML = recentSales.map(sale => `
-                <div class="sale-item ${!sale.locked ? 'unlocked' : ''}">
-                    <div class="sale-info">
-                        <strong>RM ${sale.price.toFixed(2)}</strong> - ${sale.buyer}
-                        <br><small>${sale.timestamp} ${!sale.locked ? '(UNLOCKED)' : ''}</small>
-                    </div>
-                    <button onclick="unlockSale(${sale.id})" class="btn-small ${sale.locked ? 'btn-danger' : 'btn-success'}">
-                        ${sale.locked ? 'Unlock' : 'Lock'}
-                    </button>
-                </div>
-            `).join('');
+            // Update summary cards
+            document.getElementById('total-sales').textContent = currentSales.toFixed(2);
+            document.getElementById('target-sales').textContent = targetSales.toFixed(2);
+            document.getElementById('total-bale-cost').textContent = totalBaleCost.toFixed(2);
+            document.getElementById('actual-profit').textContent = actualProfit.toFixed(2);
+            document.getElementById('items-sold').textContent = lockedSales.length;
+            document.getElementById('progress-text').textContent = progressPercentage.toFixed(1) + '%';
+            
+            // Update progress bar
+            document.getElementById('progress-fill').style.width = Math.min(progressPercentage, 100) + '%';
+            
+            // Update profit color
+            const profitDisplay = document.getElementById('profit-display');
+            if (actualProfit >= 0) {
+                profitDisplay.className = 'summary-value profit';
+            } else {
+                profitDisplay.className = 'summary-value loss';
+            }
+            
+            updateBuyerTotals();
         }
 
         function updateBuyerTotals() {
@@ -616,144 +871,6 @@
             
             if (Object.keys(buyerTotals).length === 0) {
                 buyerTotalsDiv.innerHTML = `
-                    <div style="text-align: center; color: #666;">
-                        No buyers yet
-                    </div>
-                `;
-                return;
-            }
-
-            const grandTotal = Object.values(buyerTotals).reduce((sum, buyer) => sum + buyer.total, 0);
-            const totalItems = Object.values(buyerTotals).reduce((sum, buyer) => sum + buyer.items, 0);
-
-            buyerTotalsDiv.innerHTML = Object.entries(buyerTotals)
-                .sort(([,a], [,b]) => b.total - a.total)
-                .map(([buyer, data]) => `
-                    <div class="buyer-row">
-                        <span><strong>${buyer}</strong> (${data.items} items)</span>
-                        <span><strong>RM ${data.total.toFixed(2)}</strong></span>
-                    </div>
-                `).join('') + `
-                <div class="buyer-row">
-                    <span><strong>TOTAL (${totalItems} items)</strong></span>
-                    <span><strong>RM ${grandTotal.toFixed(2)}</strong></span>
-                </div>
-            `;
-        }
-
-        function updateSummary() {
-            const lockedSales = sales.filter(sale => sale.locked);
-            const currentSales = lockedSales.reduce((sum, sale) => sum + sale.price, 0);
-            const actualProfit = currentSales - totalBaleCost;
-            const progressPercentage = targetSales > 0 ? (currentSales / targetSales * 100) : 0;
-
-            document.getElementById('total-sales').textContent = currentSales.toFixed(2);
-            document.getElementById('total-bale-cost').textContent = totalBaleCost.toFixed(2);
-            document.getElementById('target-sales').textContent = targetSales.toFixed(2);
-            document.getElementById('actual-profit').textContent = actualProfit.toFixed(2);
-            document.getElementById('items-sold').textContent = lockedSales.length;
-            document.getElementById('progress-percentage').textContent = progressPercentage.toFixed(1);
-
-            // Update profit color
-            const profitElement = document.querySelector('#summary-section .profit');
-            if (actualProfit >= 0) {
-                profitElement.className = 'summary-item profit';
-            } else {
-                profitElement.className = 'summary-item loss';
-            }
-
-            // Update progress status
-            const progressStatus = document.getElementById('progress-status');
-            if (progressPercentage >= 100) {
-                progressStatus.innerHTML = '<strong style="color: #38a169;">🎯 Target Achieved!</strong>';
-            } else if (progressPercentage >= 80) {
-                progressStatus.innerHTML = `Progress: <strong style="color: #d69e2e;">${progressPercentage.toFixed(1)}% of target - Almost there!</strong>`;
-            } else {
-                progressStatus.innerHTML = `Progress: <strong>${progressPercentage.toFixed(1)}% of target</strong>`;
-            }
-        }
-
-        function addMoreBales() {
-            // Show setup section again but keep existing data
-            document.getElementById('setup-section').classList.remove('hidden');
-            window.scrollTo(0, 0);
-        }
-
-        function newSession() {
-            if (confirm('Start a new live session? This will keep your bale costs and existing sales.')) {
-                // Just scroll to top and focus on sale entry
-                document.getElementById('sale-price').focus();
-                window.scrollTo(0, document.getElementById('sale-section').offsetTop);
-            }
-        }
-
-        function resetAll() {
-            if (confirm('Are you sure you want to reset everything? All bale costs and sales data will be lost!')) {
-                // Reset all data
-                sales = [];
-                saleCounter = 0;
-                totalBaleCost = 0;
-                targetSales = 0;
-                isSetup = false;
-                baleCount = 1;
-                
-                // Reset form
-                document.getElementById('bale-inputs').innerHTML = `
-                    <div class="bale-input">
-                        <input type="number" placeholder="Bale Cost (RM)" id="bale-cost-1" step="0.01">
-                        <button onclick="removeBale(1)" class="btn-danger btn-small" style="display: none;">❌</button>
-                    </div>
-                `;
-                document.getElementById('target-multiplier').value = '';
-                
-                // Hide sections
-                document.getElementById('cost-display').classList.add('hidden');
-                document.getElementById('target-display').classList.add('hidden');
-                document.getElementById('sale-section').classList.add('hidden');
-                document.getElementById('totals-section').classList.add('hidden');
-                document.getElementById('summary-section').classList.add('hidden');
-                document.getElementById('add-bales-btn').style.display = 'none';
-                document.getElementById('new-session-btn').style.display = 'none';
-                document.getElementById('setup-section').classList.remove('hidden');
-                
-                // Clear inputs
-                document.getElementById('sale-price').value = '';
-                document.getElementById('buyer-name').value = '';
-                
-                window.scrollTo(0, 0);
-            }
-        }
-
-        // Enter key support
-        document.getElementById('sale-price').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                document.getElementById('buyer-name').focus();
-            }
-        });
-
-        document.getElementById('buyer-name').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                addSale();
-            }
-        });
-
-        // Price suggestion update
-        document.getElementById('sale-price').addEventListener('input', function() {
-            const price = parseFloat(this.value) || 0;
-            const currentSales = sales.filter(s => s.locked).reduce((sum, s) => sum + s.price, 0);
-            const remaining = targetSales - currentSales - price;
-            
-            if (price > 0 && remaining < 0) {
-                this.style.borderColor = '#38a169';
-                this.style.backgroundColor = '#f0fff4';
-            } else if (price > 0) {
-                this.style.borderColor = '#d69e2e';
-                this.style.backgroundColor = '#fffbeb';
-            } else {
-                this.style.borderColor = '#ddd';
-                this.style.backgroundColor = 'white';
-            }
-        });
-    </script>
-</body>
-</html>
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👤</div>
+                        <p>No buyers yet</p>
