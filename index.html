@@ -3,1148 +3,2056 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shopee Live Sale Tracker</title>
+    <title>Malaysian Vector Control Insecticide Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        function exportData() {
-            const data = {
-                totalBaleCost: totalBaleCost,
-                targetMultiplier: targetMultiplier,
-                targetSales: targetSales,
-                sales: sales,
-                saleCounter: saleCounter,
-                isSetup: isSetup,
-                exportDate: new Date().toLocaleString(),
-                baleData: []
-            };
-            
-            // Save bale input data
-            for (let i = 1; i <= baleCount + 10; i++) {
-                const baleElement = document.getElementById(`bale-cost-${i}`);
-                if (baleElement && baleElement.value) {
-                    data.baleData.push({
-                        id: i,
-                        cost: parseFloat(baleElement.value)
-                    });
-                }
-            }
-            
-            const dataString = JSON.stringify(data, null, 2);
-            
-            // Create downloadable file
-            const blob = new Blob([dataString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `shopee_live_data_${new Date().toISOString().slice(0, 10)}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            // Also show data in alert for manual copy
-            const summary = `📊 BACKUP DATA (Copy this text to save):
-            
-${dataString}
-
-📝 Quick Summary:
-• Bale Cost: RM ${totalBaleCost.toFixed(2)}
-• Target: RM ${targetSales.toFixed(2)} (${targetMultiplier}x)
-• Sales Made: ${sales.filter(s => s.locked).length} items
-• Current Sales: RM ${sales.filter(s => s.locked).reduce((sum, s) => sum + s.price, 0).toFixed(2)}
-• Export Date: ${data.exportDate}`;
-            
-            if (confirm('Data saved as file! Do you also want to see the backup text to copy manually?')) {
-                alert(summary);
-            }
-        }
-
-        function importData() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        const data = JSON.parse(e.target.result);
-                        loadDataFromObject(data);
-                    } catch (error) {
-                        alert('Invalid file format! Please select a valid backup file.');
-                    }
-                };
-                reader.readAsText(file);
-            };
-            
-            // Also allow manual text input
-            const manualInput = prompt(`📂 LOAD DATA OPTIONS:
-
-1. Click OK to select backup file, OR
-2. Paste your backup text here:`);
-            
-            if (manualInput && manualInput.trim()) {
-                try {
-                    const data = JSON.parse(manualInput.trim());
-                    loadDataFromObject(data);
-                    return;
-                } catch (error) {
-                    alert('Invalid backup text format!');
-                    return;
-                }
-            }
-            
-            input.click();
-        }
-
-        function loadDataFromObject(data) {
-            if (confirm(`Load backup data from ${data.exportDate || 'unknown date'}?\n\nThis will replace your current data:\n• Bale Cost: RM ${data.totalBaleCost?.toFixed(2) || '0.00'}\n• Sales: ${data.sales?.filter(s => s.locked).length || 0} items`)) {
-                // Restore data
-                totalBaleCost = data.totalBaleCost || 0;
-                targetMultiplier = data.targetMultiplier || 2;
-                targetSales = data.targetSales || 0;
-                sales = data.sales || [];
-                saleCounter = data.saleCounter || 0;
-                isSetup = data.isSetup || false;
-                
-                // Restore form data
-                document.getElementById('target-multiplier').value = targetMultiplier;
-                
-                // Clear and restore bale inputs
-                document.getElementById('bale-inputs').innerHTML = '';
-                baleCount = 0;
-                
-                if (data.baleData && data.baleData.length > 0) {
-                    data.baleData.forEach(bale => {
-                        baleCount++;
-                        const baleInputs = document.getElementById('bale-inputs');
-                        const newBaleInput = document.createElement('div');
-                        newBaleInput.className = 'bale-input';
-                        newBaleInput.id = `bale-input-${baleCount}`;
-                        newBaleInput.innerHTML = `
-                            <input type="number" placeholder="Bale Cost (RM)" id="bale-cost-${baleCount}" step="0.01" value="${bale.cost}">
-                            <button onclick="removeBale(${baleCount})" class="btn-danger btn-small" ${baleCount === 1 ? 'style="display: none;"' : ''}>❌</button>
-                        `;
-                        baleInputs.appendChild(newBaleInput);
-                    });
-                } else {
-                    // Add default empty input
-                    baleCount = 1;
-                    document.getElementById('bale-inputs').innerHTML = `
-                        <div class="bale-input" id="bale-input-1">
-                            <input type="number" placeholder="Bale Cost (RM)" id="bale-cost-1" step="0.01">
-                            <button onclick="removeBale(1)" class="btn-danger btn-small" style="display: none;">❌</button>
-                        </div>
-                    `;
-                }
-                
-                if (isSetup) {
-                    displayCostSummary();
-                    document.querySelector(`[onclick="showPage('live')"]`).style.opacity = '1';
-                    document.querySelector(`[onclick="showPage('summary')"]`).style.opacity = '1';
-                }
-                
-                // Update current page
-                if (currentPage === 'live') {
-                    updateLivePage();
-                } else if (currentPage === 'summary') {
-                    updateSummaryPage();
-                }
-                
-                alert(`✅ Data loaded successfully!\n\n📊 Summary:\n• Bale Cost: RM ${totalBaleCost.toFixed(2)}\n• Target: RM ${targetSales.toFixed(2)}\n• Sales: ${sales.filter(s => s.locked).length} items\n• Current Total: RM ${sales.filter(s => s.locked).reduce((sum, s) => sum + s.price, 0).toFixed(2)}`);
-            }
-        }
-        
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 10px;
-        }
-        
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            min-height: calc(100vh - 20px);
-        }
-        
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 24px;
-        }
-        
-        /* Navigation */
-        .nav-tabs {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 25px;
-            background: #f1f3f4;
-            border-radius: 10px;
-            padding: 5px;
-        }
-        
-        .nav-tab {
-            flex: 1;
-            padding: 12px 8px;
-            background: transparent;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 14px;
-            font-weight: bold;
-            color: #666;
-        }
-        
-        .nav-tab.active {
-            background: #667eea;
-            color: white;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-        }
-        
-        .nav-tab:hover:not(.active) {
-            background: #e2e8f0;
-            color: #333;
-        }
-        
-        /* Pages */
-        .page {
+        .modal {
             display: none;
         }
-        
-        .page.active {
-            display: block;
-        }
-        
-        .section {
-            margin-bottom: 25px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 4px solid #667eea;
-        }
-        
-        .section h3 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 18px;
-        }
-        
-        /* Setup Page Styles */
-        .bale-input {
+        .modal.show {
             display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-            align-items: center;
         }
-        
-        .bale-input input {
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-            flex: 1;
+        .lucide-icon {
+            width: 1rem;
+            height: 1rem;
+            display: inline-block;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
-        
-        .target-input {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 15px;
+        .lucide-icon-lg {
+            width: 2rem;
+            height: 2rem;
         }
-        
-        .target-input input {
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-            width: 100px;
-        }
-        
-        .target-input label {
-            font-weight: bold;
-            color: #333;
-        }
-        
-        button {
-            padding: 12px 20px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        
-        button:hover {
-            background: #5a67d8;
-        }
-        
-        button:active {
-            transform: translateY(1px);
-        }
-        
-        .btn-danger {
-            background: #e53e3e;
-        }
-        
-        .btn-danger:hover {
-            background: #c53030;
-        }
-        
-        .btn-success {
-            background: #38a169;
-        }
-        
-        .btn-success:hover {
-            background: #2f855a;
-        }
-        
-        .btn-warning {
-            background: #d69e2e;
-        }
-        
-        .btn-warning:hover {
-            background: #b7791f;
-        }
-        
-        .btn-small {
-            padding: 5px 10px;
-            font-size: 12px;
-        }
-        
-        .cost-display {
-            background: #e6fffa;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-        }
-        
-        .cost-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px solid #b2f5ea;
-        }
-        
-        .cost-item:last-child {
-            border-bottom: none;
-            font-weight: bold;
-            color: #234e52;
-            border-top: 2px solid #38a169;
-            padding-top: 10px;
-            margin-top: 5px;
-        }
-        
-        .target-display {
-            background: #fff5b4;
-            padding: 10px;
-            border-radius: 5px;
-            text-align: center;
-            font-weight: bold;
-            color: #744210;
-            margin-top: 10px;
-        }
-        
-        /* Live Sales Page Styles */
-        .status-bar {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-        
-        .price-suggestion {
-            background: #fed7d7;
-            color: #c53030;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            margin-bottom: 15px;
-            font-weight: bold;
-            border: 2px solid #feb2b2;
-        }
-        
-        .price-suggestion.good {
-            background: #c6f6d5;
-            color: #22543d;
-            border-color: #9ae6b4;
-        }
-        
-        .sale-entry {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .sale-entry input {
-            padding: 15px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-        }
-        
-        .sale-entry input[type="number"] {
-            width: 120px;
-        }
-        
-        .sale-entry input[type="text"] {
-            flex: 1;
-        }
-        
-        .sale-entry button {
-            padding: 15px 25px;
-            font-size: 18px;
-        }
-        
-        .sales-list {
-            max-height: 400px;
-            overflow-y: auto;
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .sale-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            margin-bottom: 8px;
-            background: #f7fafc;
-            border-radius: 8px;
-            border-left: 4px solid #48bb78;
-        }
-        
-        .sale-item.unlocked {
-            background: #fed7d7;
-            border-left-color: #e53e3e;
-            opacity: 0.7;
-        }
-        
-        .sale-info {
-            flex: 1;
-        }
-        
-        .sale-price {
-            font-size: 18px;
-            font-weight: bold;
-            color: #2d3748;
-        }
-        
-        .sale-buyer {
-            font-size: 14px;
-            color: #667eea;
-            font-weight: bold;
-        }
-        
-        .sale-time {
-            font-size: 12px;
-            color: #666;
-        }
-        
-        /* Summary Page Styles */
-        .summary-grid {
-            display: grid;
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-        
-        .summary-card {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        
-        .summary-card h4 {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            font-weight: normal;
-        }
-        
-        .summary-value {
-            font-size: 28px;
-            font-weight: bold;
-            color: #2d3748;
-        }
-        
-        .summary-value.profit {
-            color: #38a169;
-        }
-        
-        .summary-value.loss {
-            color: #e53e3e;
-        }
-        
-        .progress-bar {
-            background: #e2e8f0;
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 10px;
-            height: 8px;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea, #38a169);
-            transition: width 0.5s ease;
-        }
-        
-        .buyer-totals {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        
-        .buyer-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        
-        .buyer-row:last-child {
-            border-bottom: none;
-            font-weight: bold;
-            background: #f0fff4;
-            margin: 15px -20px -20px -20px;
-            padding: 20px;
-            border-radius: 0 0 12px 12px;
-            border-top: 2px solid #38a169;
-        }
-        
-        .buyer-name {
-            font-weight: bold;
-            color: #2d3748;
-        }
-        
-        .buyer-items {
-            font-size: 12px;
-            color: #666;
-        }
-        
-        .buyer-total {
-            font-weight: bold;
-            color: #38a169;
-            font-size: 16px;
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        .empty-state {
-            text-align: center;
-            color: #666;
-            padding: 40px 20px;
-            background: #f7fafc;
-            border-radius: 10px;
-            border: 2px dashed #cbd5e0;
-        }
-        
-        .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
-        }
-        
-        @media (max-width: 480px) {
-            .container {
-                padding: 15px;
-            }
-            
-            .sale-entry {
-                flex-direction: column;
-            }
-            
-            .sale-entry input[type="number"] {
-                width: 100%;
-            }
-            
-            .nav-tab {
-                font-size: 12px;
-                padding: 10px 5px;
-            }
+        .lucide-icon-xl {
+            width: 4rem;
+            height: 4rem;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>🛍️ Shopee Live Tracker</h1>
-        
-        <!-- Navigation Tabs -->
-        <div class="nav-tabs">
-            <button class="nav-tab active" onclick="showPage('setup')">📦 Setup</button>
-            <button class="nav-tab" onclick="showPage('live')">💰 Live Sales</button>
-            <button class="nav-tab" onclick="showPage('summary')">📊 Summary</button>
+<body class="bg-gray-100">
+    <div class="max-w-6xl mx-auto p-6 bg-white">
+        <!-- Header -->
+        <div class="bg-green-600 text-white p-6 rounded-lg mb-6">
+            <div class="flex items-center gap-3 mb-2">
+                <svg class="lucide-icon-lg" viewBox="0 0 24 24">
+                    <rect width="16" height="10" x="2" y="3" rx="2" ry="2"/>
+                    <path d="m7 11 2-2-2-2"/>
+                    <path d="M11 13h4"/>
+                </svg>
+                <h1 class="text-2xl font-bold">Kalkulator Dos Racun Serangga</h1>
+            </div>
+            <p class="text-green-100">Malaysian Vector Control Insecticide Dose Calculator</p>
+            <p class="text-sm text-green-200 mt-2">
+                Untuk kawalan vektor dengue / For dengue vector control operations
+            </p>
         </div>
-        
-        <!-- Setup Page -->
-        <div id="setup-page" class="page active">
-            <div class="section">
-                <h3>📦 Bale Costs & Target Profit</h3>
-                
-                <div class="target-input">
-                    <label>Target Profit:</label>
-                    <input type="number" id="target-multiplier" placeholder="2" step="0.1" min="1">
-                    <label>x bale cost</label>
-                </div>
-                
-                <div id="bale-inputs">
-                    <div class="bale-input" id="bale-input-1">
-                        <input type="number" placeholder="Bale Cost (RM)" id="bale-cost-1" step="0.01">
-                        <button onclick="removeBale(1)" class="btn-danger btn-small" style="display: none;">❌</button>
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <button onclick="addBaleInput()" style="flex: 1;">+ Add Bale</button>
-                    <button onclick="setupComplete()" class="btn-success" style="flex: 1;">Save Setup</button>
-                </div>
-                
-                <div id="cost-display" class="cost-display hidden"></div>
-                <div id="target-display" class="target-display hidden"></div>
-            </div>
-            
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button onclick="exportData()" class="btn-success" style="flex: 1;">💾 Save Data</button>
-                <button onclick="importData()" class="btn-warning" style="flex: 1;">📂 Load Data</button>
-            </div>
-            
-            <div style="text-align: center; margin-top: 15px;">
-                <button onclick="resetAll()" class="btn-danger">🔄 Reset All Data</button>
-            </div>
-        </div>
-        
-        <!-- Live Sales Page -->
-        <div id="live-page" class="page">
-            <div id="not-setup-message" class="empty-state">
-                <div class="empty-state-icon">⚠️</div>
-                <h3>Setup Required</h3>
-                <p>Please complete the setup first before starting live sales.</p>
-                <button onclick="showPage('setup')" class="btn-warning" style="margin-top: 15px;">Go to Setup</button>
-            </div>
-            
-            <div id="live-content" class="hidden">
-                <div class="status-bar" id="status-bar">
-                    🎯 Target: RM <span id="live-target">0.00</span> | 
-                    💰 Current: RM <span id="live-current">0.00</span> | 
-                    📈 <span id="live-progress">0%</span>
-                </div>
-                
-                <div id="price-suggestion"></div>
-                
-                <div class="sale-entry">
-                    <input type="number" id="sale-price" placeholder="Price (RM)" step="0.01">
-                    <input type="text" id="buyer-name" placeholder="Buyer Username">
-                    <button onclick="addSale()" class="btn-success">LOCK</button>
-                </div>
-                
-                <div class="sales-list" id="sales-list">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">🛒</div>
-                        <h3>Ready for Live!</h3>
-                        <p>Start entering your sales above</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Summary Page -->
-        <div id="summary-page" class="page">
-            <div id="summary-not-setup" class="empty-state">
-                <div class="empty-state-icon">📊</div>
-                <h3>No Data Yet</h3>
-                <p>Complete setup and make some sales to see your summary.</p>
-            </div>
-            
-            <div id="summary-content" class="hidden">
-                <div class="summary-grid">
-                    <div class="summary-card">
-                        <h4>Total Sales</h4>
-                        <div class="summary-value">RM <span id="total-sales">0.00</span></div>
-                    </div>
-                    
-                    <div class="summary-card">
-                        <h4>Target Sales</h4>
-                        <div class="summary-value">RM <span id="target-sales">0.00</span></div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Input Section -->
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <svg class="lucide-icon text-blue-500" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="m9 12 2 2 4-4"/>
+                    </svg>
+                    Maklumat Input / Input Information
+                </h2>
+
+                <div class="space-y-4">
+                    <!-- Calculation Mode -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">
+                            <svg class="lucide-icon inline mr-1" viewBox="0 0 24 24">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                            Mod Kiraan / Calculation Mode
+                        </label>
+                        <select
+                            id="calculation_mode"
+                            class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500"
+                        >
+                            <option value="standard">Standard (Manual Input)</option>
+                            <option value="single_case">Kes Tunggal / Single Case (200m radius)</option>
+                            <option value="outbreak">Wabak / Outbreak (400m radius)</option>
+                        </select>
+                        <div id="mode-description" class="mt-2 p-2 bg-yellow-50 rounded text-xs">
+                            <strong>Standard:</strong> Masukkan data kawasan dan rumah secara manual
                         </div>
                     </div>
-                    
-                    <div class="summary-card">
-                        <h4>Bale Costs</h4>
-                        <div class="summary-value">RM <span id="total-bale-cost">0.00</span></div>
-                    </div>
-                    
-                    <div class="summary-card">
-                        <h4>Actual Profit</h4>
-                        <div class="summary-value profit" id="profit-display">RM <span id="actual-profit">0.00</span></div>
-                    </div>
-                    
-                    <div class="summary-card">
-                        <h4>Items Sold</h4>
-                        <div class="summary-value"><span id="items-sold">0</span> pcs</div>
-                    </div>
-                    
-                    <div class="summary-card">
-                        <h4>Progress</h4>
-                        <div class="summary-value" id="progress-text">0%</div>
-                    </div>
-                </div>
-                
-                <div class="section">
-                    <h3>👥 Buyer Breakdown</h3>
-                    <div class="buyer-totals" id="buyer-totals">
-                        <div class="empty-state">
-                            <div class="empty-state-icon">👤</div>
-                            <p>No buyers yet</p>
+
+                    <!-- Equipment Type (for scenarios) -->
+                    <div id="equipment-selection" style="display: none;">
+                        <label class="block text-sm font-medium mb-2">
+                            <svg class="lucide-icon inline mr-1" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10,9 9,9 8,9"/>
+                            </svg>
+                            Jenis Peralatan / Equipment Type
+                        </label>
+                        <div id="equipment-options">
+                            <!-- Will be populated based on scenario -->
                         </div>
                     </div>
+
+                    <!-- Estimated Indoor Volume (for scenarios) -->
+                    <div id="estimated-indoor-div" style="display: none;">
+                        <label class="block text-sm font-medium mb-2">
+                            <svg class="lucide-icon inline mr-1" viewBox="0 0 24 24">
+                                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                <polyline points="9,22 9,12 15,12 15,22"/>
+                            </svg>
+                            Anggaran Isipadu Dalaman (m³) / Estimated Indoor Volume (m³)
+                        </label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            id="estimated_indoor_volume"
+                            class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500"
+                            placeholder="Anggaran untuk persiapan / Estimate for preparation"
+                        />
+                        <p class="text-xs text-gray-600 mt-1">
+                            *Isipadu sebenar akan diketahui semasa survey pagi / *Actual volume determined during morning survey
+                        </p>
+                    </div>
+                    <!-- Standard Input Fields -->
+                    <div id="standard-inputs">
+                        <!-- Number of Houses -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2">
+                                <svg class="lucide-icon inline mr-1" viewBox="0 0 24 24">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                    <path d="m22 21-3-3m0 0-3-3m3 3 3 3m-3-3-3 3"/>
+                                </svg>
+                                Bilangan Rumah / Number of Houses
+                            </label>
+                            <input
+                                type="number"
+                                id="bilangan_rumah"
+                                class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500"
+                                placeholder="Contoh: 150"
+                            />
+                        </div>
+
+                        <!-- House Volume -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2">
+                                <svg class="lucide-icon inline mr-1" viewBox="0 0 24 24">
+                                    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                    <polyline points="9,22 9,12 15,12 15,22"/>
+                                </svg>
+                                Isipadu Rumah (m³) / House Volume (m³)
+                            </label>
+                            <input
+                                type="number"
+                                step="0.1"
+                                id="isipadu_rumah"
+                                class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500"
+                                placeholder="Contoh: 200"
+                            />
+                        </div>
+
+                        <!-- Area Coverage -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2">
+                                <svg class="lucide-icon inline mr-1" viewBox="0 0 24 24">
+                                    <pin path="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                                    <circle cx="12" cy="10" r="3"/>
+                                </svg>
+                                Keluasan Kawasan (hektar) / Area Coverage (hectares)
+                            </label>
+                            <input
+                                type="number"
+                                step="0.1"
+                                id="keluasan_kawasan"
+                                class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500"
+                                placeholder="Contoh: 5.5"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Insecticide Type -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-sm font-medium">
+                                Jenis Racun / Insecticide Product
+                            </label>
+                            <div class="flex gap-2">
+                                <button
+                                    type="button"
+                                    id="btn-add-product"
+                                    class="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 flex items-center gap-1"
+                                >
+                                    <svg class="w-3 h-3" viewBox="0 0 24 24">
+                                        <path d="M5 12h14m-7-7v14"/>
+                                    </svg>
+                                    Tambah / Add
+                                </button>
+                                <button
+                                    type="button"
+                                    id="btn-manage-products"
+                                    class="text-sm bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 flex items-center gap-1"
+                                    style="display: none;"
+                                >
+                                    <svg class="w-3 h-3" viewBox="0 0 24 24">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                        <path d="m18.5 2.5 a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/>
+                                    </svg>
+                                    Urus / Manage
+                                </button>
+                            </div>
+                        </div>
+                        <select
+                            id="insecticide_type"
+                            class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500"
+                        >
+                            <optgroup label="Organophosphate (Built-in)">
+                                <option value="malathion_57ec">Malathion 57% EC</option>
+                                <option value="malathion_generic">Malathion (Generic)</option>
+                                <option value="pirimiphos_methyl">Pirimiphos-methyl 50% EC</option>
+                                <option value="actelic_50ec">Actelic 50EC</option>
+                                <option value="sumithion_50ec">Sumithion 50EC</option>
+                                <option value="temephos_50ec">Temephos 50% EC (Larvicide)</option>
+                            </optgroup>
+                            <optgroup label="Synthetic Pyrethroid (Built-in)">
+                                <option value="deltamethrin_25sc">Deltamethrin 2.5% SC</option>
+                                <option value="cypermethrin_10ec">Cypermethrin 10% EC</option>
+                                <option value="permethrin_25ec">Permethrin 25% EC</option>
+                                <option value="aqua_kothrine">Aqua K-Othrine EW</option>
+                                <option value="moskilla">Moskilla</option>
+                            </optgroup>
+                            <optgroup label="Multi-active Pyrethroid (Built-in)">
+                                <option value="aqua_resigen">Aqua Resigen</option>
+                                <option value="bioallethrin_piperonyl">Bioallethrin + PBO</option>
+                            </optgroup>
+                        </select>
+                        <div id="product-info" class="mt-2 p-2 bg-blue-50 rounded text-xs"></div>
+                        <div id="product-warnings" class="mt-1"></div>
+                    </div>
+
+                    <!-- Application Method -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">
+                            Kaedah Aplikasi / Application Method
+                        </label>
+                        <select
+                            id="application_method"
+                            class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500"
+                        >
+                            <option value="fogging">Fogging (Pengasapan)</option>
+                            <option value="spraying">Spraying (Penyemburan)</option>
+                            <option value="larvicide">Larvicide (Kawalan Larva)</option>
+                        </select>
+                    </div>
+
+                    <!-- Solvent Type -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">
+                            <svg class="lucide-icon inline mr-1" viewBox="0 0 24 24">
+                                <path d="M7 19H4.815a1.83 1.83 0 0 1-1.57-.881 1.785 1.785 0 0 1-.004-1.784L7.196 9.5"/>
+                                <path d="M11 19h8.203a1.83 1.83 0 0 0 1.556-.89 1.784 1.784 0 0 0 0-1.775l-1.226-2.12"/>
+                                <path d="m14 16-3 3 3 3"/>
+                                <path d="M8.293 13.596 7.196 9.5 3.1 10.598"/>
+                                <path d="m9.344 5.811 1.093-1.892A1.83 1.83 0 0 1 11.985 3a1.784 1.784 0 0 1 1.546.888l3.943 6.843"/>
+                                <path d="m13.378 9.633 4.096 1.098 1.097-4.096"/>
+                            </svg>
+                            Jenis Pelarut / Solvent Type
+                        </label>
+                        <select
+                            id="solvent_type"
+                            class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500"
+                        >
+                            <option value="water">Air / Water Based</option>
+                            <option value="oil">Minyak / Oil Based</option>
+                        </select>
+                        <div id="solvent-warnings" class="mt-1"></div>
+                    </div>
+
+                    <!-- Indoor/Outdoor -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">
+                            <svg class="lucide-icon inline mr-1" viewBox="0 0 24 24">
+                                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                <polyline points="9,22 9,12 15,12 15,22"/>
+                            </svg>
+                            Lokasi Aplikasi / Application Location
+                        </label>
+                        <select
+                            id="location_type"
+                            class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500"
+                        >
+                            <option value="indoor">Dalaman / Indoor</option>
+                            <option value="outdoor">Luaran / Outdoor</option>
+                        </select>
+                        <div id="location-warnings" class="mt-1"></div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-3 pt-4">
+                        <button
+                            id="btn-calculate"
+                            class="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                            Kira / Calculate
+                        </button>
+                        <button
+                            id="btn-reset"
+                            class="flex-1 bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 transition-colors"
+                        >
+                            Reset
+                        </button>
+                    </div>
                 </div>
-                
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button onclick="exportData()" class="btn-success" style="flex: 1;">💾 Save Data</button>
-                    <button onclick="addMoreBales()" class="btn-warning" style="flex: 1;">📦 Add More Bales</button>
+            </div>
+
+            <!-- Results Section -->
+            <div class="bg-blue-50 p-6 rounded-lg">
+                <h2 class="text-xl font-semibold mb-4 text-blue-800">
+                    Keputusan Kiraan / Calculation Results
+                </h2>
+
+                <div id="results-container" style="display: none;">
+                    <!-- Results will be populated by JavaScript -->
+                </div>
+
+                <div id="no-results" class="text-center text-gray-500 py-8">
+                    <svg class="lucide-icon-xl mx-auto mb-4 text-gray-300" viewBox="0 0 24 24">
+                        <rect width="16" height="10" x="2" y="3" rx="2" ry="2"/>
+                        <path d="m7 11 2-2-2-2"/>
+                        <path d="M11 13h4"/>
+                    </svg>
+                    <p>Sila masukkan maklumat dan klik "Kira" untuk mendapat keputusan</p>
+                    <p class="text-sm">Please enter information and click "Calculate" to get results</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Information -->
+        <div class="mt-6 bg-gray-100 p-4 rounded-lg">
+            <h3 class="font-semibold mb-2">Nota Penting / Important Notes:</h3>
+            <ul class="text-sm text-gray-700 space-y-1">
+                <li>• Sentiasa rujuk label produk untuk arahan penggunaan yang tepat</li>
+                <li>• Always refer to product labels for precise usage instructions</li>
+                <li>• Patuhi garis panduan Kementerian Kesihatan Malaysia</li>
+                <li>• Comply with Malaysian Ministry of Health guidelines</li>
+                <li>• Gunakan alat perlindungan diri (PPE) yang sesuai</li>
+                <li>• Use appropriate personal protective equipment (PPE)</li>
+                <li>• <strong>Kiraan Moskilla berdasarkan spesifikasi ACM (Agricultural Chemicals M) Sdn Bhd</strong></li>
+                <li>• <strong>Moskilla calculations based on ACM (Agricultural Chemicals M) Sdn Bhd specifications</strong></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div id="add-product-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg max-w-2xl w-full max-h-96 overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="modal-title" class="text-xl font-semibold">Tambah Produk Baru / Add New Product</h2>
+                    <button id="btn-close-modal" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" viewBox="0 0 24 24">
+                            <path d="m18 6-12 12M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Nama Produk / Product Name *</label>
+                        <input
+                            type="text"
+                            id="new-name"
+                            class="w-full p-2 border rounded"
+                            placeholder="e.g., Custom Malathion 50% EC"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Kelas Kimia / Chemical Class</label>
+                        <select id="new-chemical-class" class="w-full p-2 border rounded">
+                            <option value="Organophosphate">Organophosphate</option>
+                            <option value="Synthetic Pyrethroid">Synthetic Pyrethroid</option>
+                            <option value="Natural Pyrethroid">Natural Pyrethroid</option>
+                            <option value="Carbamate">Carbamate</option>
+                            <option value="Organochlorine">Organochlorine</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Bahan Aktif / Active Ingredient *</label>
+                        <input
+                            type="text"
+                            id="new-active-ingredient"
+                            class="w-full p-2 border rounded"
+                            placeholder="e.g., Malathion"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Kepekatan / Concentration</label>
+                        <input
+                            type="text"
+                            id="new-concentration"
+                            class="w-full p-2 border rounded"
+                            placeholder="e.g., 50% EC"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">No. PHE</label>
+                        <input
+                            type="text"
+                            id="new-phe-number"
+                            class="w-full p-2 border rounded"
+                            placeholder="e.g., PHE/INS/999"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Nama Produk Komersial (pisah dengan koma)</label>
+                        <input
+                            type="text"
+                            id="new-common-products"
+                            class="w-full p-2 border rounded"
+                            placeholder="e.g., Product A, Product B"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Pencairan Fogging (%)</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            id="new-fogging-dilution"
+                            class="w-full p-2 border rounded"
+                            placeholder="e.g., 0.5"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Pencairan Spraying (%)</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            id="new-spraying-dilution"
+                            class="w-full p-2 border rounded"
+                            placeholder="e.g., 2.0"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Kadar Aplikasi Fogging (L per 1000m³)</label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            id="new-application-rate-fogging"
+                            class="w-full p-2 border rounded"
+                            placeholder="e.g., 1.0"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Kadar Aplikasi Spraying (mL per m²)</label>
+                        <input
+                            type="number"
+                            step="1"
+                            id="new-application-rate-spraying"
+                            class="w-full p-2 border rounded"
+                            placeholder="e.g., 40"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Kadar Larvicide (ppm)</label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            id="new-larvicide-rate"
+                            class="w-full p-2 border rounded"
+                            placeholder="e.g., 1.0"
+                        />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Pelarut Sesuai (tahan Ctrl untuk pilih multiple)</label>
+                        <select
+                            id="new-compatible-solvents"
+                            multiple
+                            class="w-full p-2 border rounded"
+                        >
+                            <option value="water">Air / Water</option>
+                            <option value="oil">Minyak / Oil</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Kosongkan untuk semua jenis pelarut</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Lokasi Sesuai (tahan Ctrl untuk pilih multiple)</label>
+                        <select
+                            id="new-indoor-outdoor"
+                            multiple
+                            class="w-full p-2 border rounded"
+                        >
+                            <option value="indoor">Dalaman / Indoor</option>
+                            <option value="outdoor">Luaran / Outdoor</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Kosongkan untuk semua lokasi</p>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <label class="block text-sm font-medium mb-1">Amaran Keselamatan (satu baris satu amaran)</label>
+                    <textarea
+                        id="new-safety-warnings"
+                        class="w-full p-2 border rounded"
+                        rows="3"
+                        placeholder="Gunakan PPE yang lengkap&#10;Jangan aplikasi semasa berangin&#10;Cuci tangan selepas penggunaan"
+                    ></textarea>
+                </div>
+
+                <div class="mt-4">
+                    <label class="block text-sm font-medium mb-1">Amaran Alam Sekitar (satu baris satu amaran)</label>
+                    <textarea
+                        id="new-environmental-warnings"
+                        class="w-full p-2 border rounded"
+                        rows="2"
+                        placeholder="Toksik kepada ikan&#10;Elakkan pencemaran sumber air"
+                    ></textarea>
+                </div>
+
+                <div class="flex gap-3 mt-6">
+                    <button
+                        id="btn-save-product"
+                        class="flex-1 bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 flex items-center justify-center gap-2"
+                    >
+                        <svg class="w-4 h-4" viewBox="0 0 24 24">
+                            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+                        </svg>
+                        <span id="save-button-text">Simpan / Save</span>
+                    </button>
+                    <button
+                        id="btn-cancel-modal"
+                        class="flex-1 bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700"
+                    >
+                        Batal / Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Products Modal -->
+    <div id="manage-products-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg max-w-4xl w-full max-h-96 overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Urus Produk Custom / Manage Custom Products</h2>
+                    <button id="btn-close-manage-modal" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" viewBox="0 0 24 24">
+                            <path d="m18 6-12 12M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div id="custom-products-list">
+                    <!-- Custom products will be populated here -->
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        let totalBaleCost = 0;
-        let targetMultiplier = 2;
-        let targetSales = 0;
-        let sales = [];
-        let baleCount = 1;
-        let saleCounter = 0;
-        let isSetup = false;
-        let currentPage = 'setup';
+        // Insecticide Database
+        const insecticideData = {
+            malathion_57ec: {
+                name: 'Malathion 57% EC',
+                chemical_class: 'Organophosphate',
+                active_ingredient: 'Malathion',
+                concentration: '57% EC',
+                common_products: ['Fyfanon ULV', 'Malathion 57EC', 'Cythion ULV'],
+                fogging_dilution: 0.8,
+                spraying_dilution: 2.5,
+                application_rate_fogging: 1.2,
+                application_rate_spraying: 50,
+                compatible_solvents: ['oil', 'water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'PHE/INS/001',
+                safety_warnings: [
+                    'Gunakan alat perlindungan diri (PPE) yang lengkap termasuk respirator',
+                    'Jangan aplikasi semasa cuaca berangin (>10 km/j)',
+                    'Elakkan aplikasi ketika hujan atau kelembapan >85%',
+                    'Simpan dalam suhu sejuk, jauh dari kanak-kanak',
+                    'Cuci tangan dan peralatan selepas penggunaan'
+                ],
+                environmental_warnings: [
+                    'Toksik kepada lebah dan serangga berfaedah',
+                    'Jangan aplikasi berhampiran kolam ikan'
+                ]
+            },
+            pirimiphos_methyl: {
+                name: 'Pirimiphos-methyl 50% EC',
+                chemical_class: 'Organophosphate',
+                active_ingredient: 'Pirimiphos-methyl',
+                concentration: '50% EC',
+                common_products: ['Actellic 50EC', 'Babolna Bio Pirimor'],
+                fogging_dilution: 0.4,
+                spraying_dilution: 1.5,
+                application_rate_fogging: 0.8,
+                application_rate_spraying: 35,
+                compatible_solvents: ['oil', 'water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'PHE/INS/002',
+                safety_warnings: [
+                    'Gunakan masker dan sarung tangan getah',
+                    'Elakkan penyedutan wap secara langsung',
+                    'Jangan makan, minum atau merokok semasa aplikasi',
+                    'Mandikan diri selepas penggunaan'
+                ],
+                environmental_warnings: [
+                    'Moderately toxic kepada ikan',
+                    'Elakkan pencemaran sumber air'
+                ]
+            },
+            deltamethrin_25sc: {
+                name: 'Deltamethrin 2.5% SC',
+                chemical_class: 'Synthetic Pyrethroid',
+                active_ingredient: 'Deltamethrin',
+                concentration: '2.5% SC',
+                common_products: ['K-Othrine SC25', 'Decis 2.5EC', 'DeltaGard'],
+                fogging_dilution: 0.15,
+                spraying_dilution: 0.025,
+                application_rate_fogging: 0.3,
+                application_rate_spraying: 20,
+                compatible_solvents: ['oil', 'water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'PHE/INS/003',
+                safety_warnings: [
+                    'Gunakan PPE lengkap - sangat penting untuk pyrethroid',
+                    'Elakkan kontak dengan kulit dan mata',
+                    'Jangan aplikasi dalam ruang tertutup tanpa ventilasi',
+                    'Simpan dalam bekas asal, label mesti utuh'
+                ],
+                environmental_warnings: [
+                    'SANGAT TOKSIK kepada ikan dan udang',
+                    'Sangat toksik kepada lebah',
+                    'Jangan aplikasi berhampiran sungai, tasik atau laut',
+                    'Elakkan aplikasi semasa musim pembiakan ikan'
+                ]
+            },
+            cypermethrin_10ec: {
+                name: 'Cypermethrin 10% EC',
+                chemical_class: 'Synthetic Pyrethroid',
+                active_ingredient: 'Cypermethrin',
+                concentration: '10% EC',
+                common_products: ['Cymbush 10EC', 'Ripcord 10EC', 'Sherpa 10EC'],
+                fogging_dilution: 0.2,
+                spraying_dilution: 0.05,
+                application_rate_fogging: 0.4,
+                application_rate_spraying: 25,
+                compatible_solvents: ['oil', 'water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'PHE/INS/004',
+                safety_warnings: [
+                    'Pakai suit perlindungan dan respirator',
+                    'Cuci peralatan dengan sabun alkaline',
+                    'Jangan aplikasi lebih dari 2 kali sebulan di kawasan sama',
+                    'Monitor untuk simptom keracunan pyrethroid'
+                ],
+                environmental_warnings: [
+                    'Highly toxic kepada organisma akuatik',
+                    'Boleh menyebabkan bioaccumulation'
+                ]
+            },
+            permethrin_25ec: {
+                name: 'Permethrin 25% EC',
+                chemical_class: 'Synthetic Pyrethroid',
+                active_ingredient: 'Permethrin',
+                concentration: '25% EC',
+                common_products: ['Ambush 25EC', 'Pounce 25EC', 'Outflank 25EC'],
+                fogging_dilution: 0.1,
+                spraying_dilution: 0.02,
+                application_rate_fogging: 0.25,
+                application_rate_spraying: 15,
+                compatible_solvents: ['oil', 'water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'PHE/INS/005',
+                safety_warnings: [
+                    'Lebih selamat berbanding pyrethroid lain untuk manusia',
+                    'Tetap gunakan PPE yang sesuai',
+                    'Elakkan aplikasi berulang di kawasan sama',
+                    'Pastikan ventilasi mencukupi'
+                ],
+                environmental_warnings: [
+                    'Toksik kepada ikan dan arthropoda akuatik',
+                    'Relatively safe untuk mamalia dan burung'
+                ]
+            },
+            temephos_50ec: {
+                name: 'Temephos 50% EC (Larvicide)',
+                chemical_class: 'Organophosphate',
+                active_ingredient: 'Temephos',
+                concentration: '50% EC',
+                common_products: ['Abate 500EC', 'Biothion'],
+                fogging_dilution: 0.0,
+                spraying_dilution: 0.0,
+                application_rate_fogging: 0.0,
+                application_rate_spraying: 0.0,
+                larvicide_rate: 1.0,
+                compatible_solvents: ['water'],
+                indoor_outdoor: ['outdoor'],
+                phe_number: 'PHE/LARV/001',
+                safety_warnings: [
+                    'Khusus untuk kawalan larva - BUKAN untuk fogging dewasa',
+                    'Gunakan untuk tempat pembiakan nyamuk sahaja',
+                    'Dos: 1ppm untuk air bertakung',
+                    'Selamat untuk ikan pada kepekatan rendah'
+                ],
+                environmental_warnings: [
+                    'Specifically designed untuk larviciding',
+                    'Biodegradable dalam persekitaran akuatik'
+                ]
+            },
+            bioallethrin_piperonyl: {
+                name: 'Bioallethrin + Piperonyl Butoxide',
+                chemical_class: 'Natural Pyrethroid + Synergist',
+                active_ingredient: 'Bioallethrin 1% + PBO 5%',
+                concentration: '6% EC',
+                common_products: ['Pynosect', 'Sumithrin', 'Bio-Mist'],
+                fogging_dilution: 0.5,
+                spraying_dilution: 0.1,
+                application_rate_fogging: 0.6,
+                application_rate_spraying: 30,
+                compatible_solvents: ['oil', 'water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'PHE/INS/006',
+                safety_warnings: [
+                    'Lebih selamat - berasaskan pyrethrin semulajadi',
+                    'Sesuai untuk kawasan sensitif (hospital, sekolah)',
+                    'Tetap gunakan PPE untuk aplikator',
+                    'Kesan cepat tetapi residual effect pendek'
+                ],
+                environmental_warnings: [
+                    'Biodegradable dengan cepat',
+                    'Kurang persistant dalam persekitaran'
+                ]
+            },
+            moskilla: {
+                name: 'Moskilla',
+                chemical_class: 'Synthetic Pyrethroid',
+                active_ingredient: 'Metofluthrin',
+                concentration: '0.76% w/w',
+                common_products: ['X\'Mos Mini', 'Moskilla Aerosol'],
+                fogging_dilution: 0.5, // 5ml per liter = 0.5%
+                spraying_dilution: 0.05,
+                application_rate_fogging: 0.2, // 200ml per 1000m³ = 0.2L per 1000m³
+                application_rate_spraying: 20,
+                outdoor_rate_per_hectare: 25, // 25ml per hectare as per ACM calculation
+                compatible_solvents: ['oil', 'water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'LRMP.R1/9508',
+                safety_warnings: [
+                    'Jangan semburkan terus pada kulit atau badan',
+                    'Tunggu 5 minit sebelum masuk bilik selepas penggunaan',
+                    'Selamat untuk wanita mengandung dan kanak-kanak',
+                    'Tanpa bau dan tidak meninggalkan kesan minyak'
+                ],
+                environmental_warnings: [
+                    'Biodegradable dengan cepat',
+                    'Residual effect yang pendek',
+                    'Toksisiti rendah untuk mamalia'
+                ]
+            },
+            actelic_50ec: {
+                name: 'Actelic 50EC',
+                chemical_class: 'Organophosphate',
+                active_ingredient: 'Pirimiphos-methyl',
+                concentration: '50% EC',
+                common_products: ['Actellic 50EC', 'Actelic 50EC'],
+                fogging_dilution: 0.4,
+                spraying_dilution: 1.5,
+                application_rate_fogging: 0.8,
+                application_rate_spraying: 35,
+                compatible_solvents: ['oil', 'water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'PHE/INS/007',
+                safety_warnings: [
+                    'Gunakan masker dan sarung tangan getah',
+                    'Elakkan penyedutan wap secara langsung',
+                    'Jangan makan, minum atau merokok semasa aplikasi',
+                    'Cuci badan dengan bersih selepas penggunaan'
+                ],
+                environmental_warnings: [
+                    'Moderately toxic kepada ikan',
+                    'Elakkan pencemaran sumber air',
+                    'Jangan aplikasi berhampiran kolam ikan'
+                ]
+            },
+            sumithion_50ec: {
+                name: 'Sumithion 50EC',
+                chemical_class: 'Organophosphate',
+                active_ingredient: 'Fenitrothion',
+                concentration: '50% EC',
+                common_products: ['Sumithion 50EC', 'Sumithion L-40'],
+                fogging_dilution: 0.6,
+                spraying_dilution: 2.0,
+                application_rate_fogging: 1.0,
+                application_rate_spraying: 45,
+                compatible_solvents: ['oil', 'water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'PHE/INS/008',
+                safety_warnings: [
+                    'Gunakan PPE lengkap termasuk respirator',
+                    'Organophosphate - berisiko keracunan cholinesterase',
+                    'Elakkan aplikasi semasa cuaca panas',
+                    'Monitor simptom keracunan (sakit kepala, loya)'
+                ],
+                environmental_warnings: [
+                    'Toksik kepada lebah dan serangga berfaedah',
+                    'Jangan aplikasi semasa musim bunga',
+                    'Boleh mencemarkan sumber air bawah tanah'
+                ]
+            },
+            malathion_generic: {
+                name: 'Malathion (Generic)',
+                chemical_class: 'Organophosphate',
+                active_ingredient: 'Malathion',
+                concentration: '50% EC',
+                common_products: ['Malathion 50EC', 'Generic Malathion'],
+                fogging_dilution: 0.8,
+                spraying_dilution: 2.5,
+                application_rate_fogging: 1.2,
+                application_rate_spraying: 50,
+                compatible_solvents: ['oil', 'water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'PHE/INS/009',
+                safety_warnings: [
+                    'Lebih selamat berbanding organophosphate lain',
+                    'Tetap gunakan PPE yang sesuai',
+                    'Elakkan aplikasi berulang dalam masa singkat',
+                    'Simpan dalam suhu sejuk dan kering'
+                ],
+                environmental_warnings: [
+                    'Toksik kepada lebah pada kepekatan tinggi',
+                    'Relatively safe untuk ikan pada dos rendah',
+                    'Biodegradable dalam persekitaran'
+                ]
+            },
+            aqua_resigen: {
+                name: 'Aqua Resigen',
+                chemical_class: 'Multi-active Pyrethroid',
+                active_ingredient: 'S-bioallethrin 0.14% + Permethrin 10.27% + PBO 9.84%',
+                concentration: 'EW formulation',
+                common_products: ['Aqua Resigen EW', 'Aqua Reslin Super'],
+                fogging_dilution: 0.2,
+                spraying_dilution: 0.08,
+                application_rate_fogging: 0.4,
+                application_rate_spraying: 25,
+                compatible_solvents: ['water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'PHE/INS/010',
+                safety_warnings: [
+                    'Gunakan dengan air sahaja - JANGAN gunakan minyak',
+                    'FFAST technology - enhanced performance dengan air',
+                    'Tanpa bau dan tidak meninggalkan kesan',
+                    'Sesuai untuk aplikasi dalaman dan luaran'
+                ],
+                environmental_warnings: [
+                    'Environmentally-sensitive formulation',
+                    'Kurangkan pencemaran berbanding minyak-based',
+                    'Toksik kepada organisma akuatik - elakkan sumber air'
+                ]
+            },
+            aqua_kothrine: {
+                name: 'Aqua K-Othrine EW',
+                chemical_class: 'Synthetic Pyrethroid',
+                active_ingredient: 'Deltamethrin',
+                concentration: '2.0% w/w EW',
+                common_products: ['Aqua K-Othrine EW', 'K-Othrine Water Base'],
+                fogging_dilution: 0.15,
+                spraying_dilution: 0.03,
+                application_rate_fogging: 0.3,
+                application_rate_spraying: 20,
+                compatible_solvents: ['water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'PHE/INS/011',
+                safety_warnings: [
+                    'Produk berasaskan air - tidak mudah terbakar',
+                    'FFAST technology dengan formula unik',
+                    'WHO-PQ listed dan diluluskan (Ref.No.: 008-001)',
+                    'Elakkan aplikasi ketika kelajuan angin melebihi 10 km/j'
+                ],
+                environmental_warnings: [
+                    'Kurangkan pencemaran dibanding oil-based',
+                    'SANGAT TOKSIK kepada ikan dan organisma akuatik',
+                    'Toksik kepada lebah - elakkan aplikasi semasa musim bunga',
+                    'Jangan aplikasi berhampiran sumber air'
+                ]
+            },
+            resigen: {
+                name: 'Resigen',
+                chemical_class: 'Multi-active Pyrethroid',
+                active_ingredient: 'Permethrin + S-bioallethrin + PBO',
+                concentration: 'EC formulation',
+                common_products: ['Resigen EC', 'Bayer Resigen'],
+                fogging_dilution: 1.0, // 10ml per liter = 1%
+                spraying_dilution: 10.0, // 100ml per liter = 10%
+                application_rate_fogging: 10, // 10 litre/ha for thermal fogging
+                application_rate_spraying: 1000, // 1 litre/ha for ULV
+                fogging_indoor_rate: 0.5, // 1 litre per 2000m³
+                ulv_indoor_rate: 0.05, // 100ml per 2000m³
+                compatible_solvents: ['oil', 'water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'JIRP.P/0120/002',
+                safety_warnings: [
+                    'Boleh digunakan dengan air atau diesel/kerosene',
+                    'Gunakan PPE yang sesuai',
+                    'Elakkan aplikasi dalam ruang tertutup tanpa ventilasi',
+                    'Ikut jadual penggunaan yang ditetapkan'
+                ],
+                environmental_warnings: [
+                    'Toksik kepada organisma akuatik',
+                    'Elakkan pencemaran sumber air',
+                    'Gunakan mengikut label untuk mengelakkan rintangan'
+                ]
+            },
+            deltacide: {
+                name: 'Deltacide',
+                chemical_class: 'Synthetic Pyrethroid',
+                active_ingredient: 'Deltamethrin',
+                concentration: 'Emulsifiable Concentrate',
+                common_products: ['Deltacide EC', 'Bayer Deltacide'],
+                fogging_dilution: 1.0, // 10ml per liter = 1% (low output)
+                fogging_dilution_high: 0.2, // 2ml per liter = 0.2% (high output)
+                spraying_dilution: 20.0, // 200ml per liter = 20% (ULV low output)
+                spraying_dilution_high: 10.0, // 100ml per liter = 10% (ULV high output)
+                application_rate_fogging: 10, // 10 litre/ha (low output)
+                application_rate_fogging_high: 50, // 50 litre/ha (high output)
+                application_rate_spraying: 0.5, // 500ml/ha (ULV low output)
+                application_rate_spraying_high: 1.0, // 1 litre/ha (ULV high output)
+                indoor_rate: 0.5, // 1 litre per 2000m³
+                compatible_solvents: ['water'],
+                indoor_outdoor: ['indoor', 'outdoor'],
+                phe_number: 'JIRP.P/0120/006',
+                safety_warnings: [
+                    'Produk berasaskan air - tidak mudah terbakar',
+                    'Gunakan untuk kawasan yang mungkin ada serangga',
+                    'Kadar pencairan berbeza mengikut jenis mesin',
+                    'Ikut arahan label sebelum guna'
+                ],
+                environmental_warnings: [
+                    'SANGAT TOKSIK kepada ikan dan organisma akuatik',
+                    'Elakkan aplikasi berhampiran sumber air',
+                    'Gunakan hanya mengikut keperluan'
+                ]
+            },
+            abate_500: {
+                name: 'ABATE 500',
+                chemical_class: 'Organophosphate',
+                active_ingredient: 'Temephos',
+                concentration: '47.4% w/w',
+                common_products: ['ABATE 500 EC', 'Temephos 500'],
+                fogging_dilution: 0.0, // Not for fogging
+                spraying_dilution: 0.0, // Not for spraying
+                application_rate_fogging: 0.0,
+                application_rate_spraying: 0.0,
+                larvicide_rate: 1.2, // 12ml per 100 litres = 120ppm, but typically used at 1ppm
+                ulv_adult_rate: 400, // 400ml ULV for adults per hectare
+                compatible_solvents: ['water'],
+                indoor_outdoor: ['outdoor'],
+                phe_number: 'Temephos Registration',
+                safety_warnings: [
+                    'Khusus untuk kawalan larva dan dewasa (ULV)',
+                    'ABATE 500: 12ml untuk 100 liter air (larva)',
+                    'ULV dewasa: 160ml untuk 400ml solution (25L/ha)',
+                    'Selamat untuk ikan pada kepekatan rendah'
+                ],
+                environmental_warnings: [
+                    'Specifically designed untuk larviciding',
+                    'Biodegradable dalam persekitaran akuatik',
+                    'Boleh digunakan dalam sumber air'
+                ]
+            },
+            abate_11g: {
+                name: 'ABATE 1.1G',
+                chemical_class: 'Organophosphate',
+                active_ingredient: 'Temephos',
+                concentration: '1.1% w/w granule',
+                common_products: ['ABATE 1.1G Granule'],
+                fogging_dilution: 0.0,
+                spraying_dilution: 0.0,
+                application_rate_fogging: 0.0,
+                application_rate_spraying: 0.0,
+                larvicide_rate: 5, // 5g per 10m² or 5kg per hectare
+                compatible_solvents: ['water'],
+                indoor_outdoor: ['outdoor'],
+                phe_number: 'Temephos Granule Registration',
+                safety_warnings: [
+                    'Granule untuk kawalan larva sahaja',
+                    'Taburkan terus dalam air bertakung',
+                    'Dos: 5g per 10m² atau 5kg per hektar',
+                    'Aplikasi berulang setiap 2-3 bulan'
+                ],
+                environmental_warnings: [
+                    'Specifically designed untuk larviciding',
+                    'Biodegradable dalam persekitaran akuatik',
+                    'Selamat untuk ekosistem air'
+                ]
+            }
+        };
 
-        function showPage(page) {
-            // Hide all pages
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-            
-            // Show selected page
-            document.getElementById(page + '-page').classList.add('active');
-            document.querySelector(`[onclick="showPage('${page}')"]`).classList.add('active');
-            
-            currentPage = page;
-            
-            // Update page content
-            if (page === 'live') {
-                updateLivePage();
-            } else if (page === 'summary') {
-                updateSummaryPage();
+        // Equipment specifications
+        const equipmentSpecs = {
+            fogger_capacity: 20,
+            sprayer_capacity: 16,
+            fogging_coverage_per_charge: 5000,
+            spraying_coverage_per_charge: 400
+        };
+
+        // Global variables
+        let customProducts = [];
+        let editingProduct = null;
+
+        // Load custom products from localStorage
+        function loadCustomProducts() {
+            const saved = localStorage.getItem('customInsecticideProducts');
+            if (saved) {
+                customProducts = JSON.parse(saved);
+                updateProductDropdown();
+                updateManageButton();
             }
         }
 
-        function addBaleInput() {
-            baleCount++;
-            const baleInputs = document.getElementById('bale-inputs');
-            const newBaleInput = document.createElement('div');
-            newBaleInput.className = 'bale-input';
-            newBaleInput.id = `bale-input-${baleCount}`;
-            newBaleInput.innerHTML = `
-                <input type="number" placeholder="Bale Cost (RM)" id="bale-cost-${baleCount}" step="0.01">
-                <button onclick="removeBale(${baleCount})" class="btn-danger btn-small">❌</button>
-            `;
-            baleInputs.appendChild(newBaleInput);
+        // Save custom products to localStorage
+        function saveCustomProducts() {
+            localStorage.setItem('customInsecticideProducts', JSON.stringify(customProducts));
         }
 
-        function removeBale(id) {
-            if (baleCount <= 1) return;
-            const element = document.getElementById(`bale-input-${id}`);
-            if (element) element.remove();
+        // Get all products (default + custom)
+        function getAllProducts() {
+            const allProducts = { ...insecticideData };
+            customProducts.forEach(product => {
+                allProducts[product.id] = {
+                    ...product,
+                    common_products: product.common_products.split(',').map(p => p.trim()),
+                    safety_warnings: product.safety_warnings.split('\n').filter(w => w.trim()),
+                    environmental_warnings: product.environmental_warnings.split('\n').filter(w => w.trim())
+                };
+            });
+            return allProducts;
         }
 
-        function setupComplete() {
-            const multiplier = parseFloat(document.getElementById('target-multiplier').value) || 2;
-            let totalCost = 0;
-            let validBales = 0;
+        // Update product dropdown
+        function updateProductDropdown() {
+            const select = document.getElementById('insecticide_type');
+            const currentValue = select.value;
+            
+            // Remove existing custom options
+            const customOptgroup = select.querySelector('optgroup[label*="Custom"]');
+            if (customOptgroup) {
+                customOptgroup.remove();
+            }
 
-            for (let i = 1; i <= baleCount + 10; i++) { // Check more IDs in case some were removed
-                const baleElement = document.getElementById(`bale-cost-${i}`);
-                if (!baleElement) continue;
+            // Add custom products if any exist
+            if (customProducts.length > 0) {
+                const customOptgroup = document.createElement('optgroup');
+                customOptgroup.label = 'Custom Products';
                 
-                const cost = parseFloat(baleElement.value) || 0;
-                if (cost > 0) {
-                    totalCost += cost;
-                    validBales++;
-                }
-            }
-
-            if (validBales === 0) {
-                alert('Please enter at least one valid bale cost!');
-                return;
-            }
-
-            totalBaleCost = totalCost;
-            targetMultiplier = multiplier;
-            targetSales = totalBaleCost * targetMultiplier;
-            isSetup = true;
-
-            displayCostSummary();
-            
-            // Enable live sales tab
-            document.querySelector(`[onclick="showPage('live')"]`).style.opacity = '1';
-            document.querySelector(`[onclick="showPage('summary')"]`).style.opacity = '1';
-            
-            alert('Setup complete! You can now start live sales.');
-        }
-
-        function displayCostSummary() {
-            let costHtml = '';
-            
-            for (let i = 1; i <= baleCount + 10; i++) {
-                const baleElement = document.getElementById(`bale-cost-${i}`);
-                if (!baleElement) continue;
+                customProducts.forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product.id;
+                    option.textContent = `${product.name} (${product.chemical_class})`;
+                    customOptgroup.appendChild(option);
+                });
                 
-                const cost = parseFloat(baleElement.value) || 0;
-                if (cost > 0) {
-                    costHtml += `<div class="cost-item"><span>Bale ${i}:</span><span>RM ${cost.toFixed(2)}</span></div>`;
-                }
+                select.appendChild(customOptgroup);
+            }
+
+            // Restore selection if still valid
+            if (currentValue && [...select.options].some(opt => opt.value === currentValue)) {
+                select.value = currentValue;
             }
             
-            costHtml += `<div class="cost-item"><span>Total Bale Cost:</span><span>RM ${totalBaleCost.toFixed(2)}</span></div>`;
-            
-            document.getElementById('cost-display').innerHTML = costHtml;
-            document.getElementById('cost-display').classList.remove('hidden');
-            
-            document.getElementById('target-display').innerHTML = 
-                `🎯 Target Sales: RM ${targetSales.toFixed(2)} (${targetMultiplier}x cost)`;
-            document.getElementById('target-display').classList.remove('hidden');
+            updateProductInfo();
         }
 
-        function updateLivePage() {
-            if (!isSetup) {
-                document.getElementById('not-setup-message').classList.remove('hidden');
-                document.getElementById('live-content').classList.add('hidden');
-                return;
-            }
-            
-            document.getElementById('not-setup-message').classList.add('hidden');
-            document.getElementById('live-content').classList.remove('hidden');
-            
-            updateLiveStats();
-            updatePriceSuggestion();
-            updateSalesListLive();
+        // Update manage button visibility
+        function updateManageButton() {
+            const manageBtn = document.getElementById('btn-manage-products');
+            manageBtn.style.display = customProducts.length > 0 ? 'flex' : 'none';
         }
 
-        function updateLiveStats() {
-            const currentSales = sales.filter(s => s.locked).reduce((sum, s) => sum + s.price, 0);
-            const progressPercentage = targetSales > 0 ? (currentSales / targetSales * 100) : 0;
-            
-            document.getElementById('live-target').textContent = targetSales.toFixed(2);
-            document.getElementById('live-current').textContent = currentSales.toFixed(2);
-            document.getElementById('live-progress').textContent = progressPercentage.toFixed(1) + '%';
-        }
+        // Update calculation mode interface
+        function updateCalculationMode() {
+            const mode = document.getElementById('calculation_mode').value;
+            const standardInputs = document.getElementById('standard-inputs');
+            const equipmentSelection = document.getElementById('equipment-selection');
+            const estimatedIndoorDiv = document.getElementById('estimated-indoor-div');
+            const modeDescription = document.getElementById('mode-description');
+            const equipmentOptions = document.getElementById('equipment-options');
 
-        function updatePriceSuggestion() {
-            const currentSales = sales.filter(s => s.locked).reduce((sum, s) => sum + s.price, 0);
-            const itemsSold = sales.filter(s => s.locked).length;
-            const remaining = targetSales - currentSales;
-            
-            if (remaining <= 0) {
-                document.getElementById('price-suggestion').innerHTML = 
-                    '<div class="price-suggestion good">🎉 Target achieved! Any price is bonus profit!</div>';
-                return;
-            }
-            
-            const itemsRemaining = Math.max(1, 50 - itemsSold); // Assume 50 more items
-            const suggestedPrice = remaining / itemsRemaining;
-            
-            document.getElementById('price-suggestion').innerHTML = 
-                `<div class="price-suggestion">💡 Suggested min: RM ${suggestedPrice.toFixed(2)} (${itemsRemaining} items left to reach target)</div>`;
-        }
+            // Reset display
+            standardInputs.style.display = 'block';
+            equipmentSelection.style.display = 'none';
+            estimatedIndoorDiv.style.display = 'none';
 
-        function updateSalesListLive() {
-            const salesList = document.getElementById('sales-list');
-            
-            if (sales.length === 0) {
-                salesList.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">🛒</div>
-                        <h3>Ready for Live!</h3>
-                        <p>Start entering your sales above</p>
+            if (mode === 'standard') {
+                modeDescription.innerHTML = '<strong>Standard:</strong> Masukkan data kawasan dan rumah secara manual';
+            } else if (mode === 'single_case') {
+                standardInputs.style.display = 'none';
+                equipmentSelection.style.display = 'block';
+                estimatedIndoorDiv.style.display = 'block';
+                
+                modeDescription.innerHTML = `
+                    <strong>Kes Tunggal (200m radius):</strong><br>
+                    • Thermal fogging untuk kawasan 200m radius<br>
+                    • Survey pagi untuk tentukan isipadu dalaman<br>
+                    • Kawalan petang berdasarkan persiapan
+                `;
+
+                equipmentOptions.innerHTML = `
+                    <div class="p-3 bg-blue-50 border rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <input type="radio" id="thermal_only" name="equipment" value="thermal" checked>
+                            <label for="thermal_only" class="font-medium">Thermal Fogging Sahaja</label>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">Kawasan outdoor: 200m radius (12.57 hektar)</p>
                     </div>
                 `;
-                return;
-            }
+            } else if (mode === 'outbreak') {
+                standardInputs.style.display = 'none';
+                equipmentSelection.style.display = 'block';
+                estimatedIndoorDiv.style.display = 'block';
+                
+                modeDescription.innerHTML = `
+                    <strong>Wabak (400m radius):</strong><br>
+                    • Thermal fogging + ULV untuk kawasan 400m radius<br>
+                    • Survey pagi untuk tentukan isipadu dalaman<br>
+                    • Kawalan petang dengan 2 jenis mesin
+                `;
 
-            const recentSales = [...sales].reverse().slice(0, 10); // Show last 10 sales
-            salesList.innerHTML = recentSales.map(sale => `
-                <div class="sale-item ${!sale.locked ? 'unlocked' : ''}">
-                    <div class="sale-info">
-                        <div class="sale-price">RM ${sale.price.toFixed(2)}</div>
-                        <div class="sale-buyer">${sale.buyer}</div>
-                        <div class="sale-time">${sale.timestamp} ${!sale.locked ? '(UNLOCKED)' : ''}</div>
+                equipmentOptions.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="p-3 bg-red-50 border rounded-lg">
+                            <div class="flex items-center gap-2">
+                                <input type="radio" id="thermal_ulv" name="equipment" value="thermal_ulv" checked>
+                                <label for="thermal_ulv" class="font-medium">Thermal Fogging + ULV</label>
+                            </div>
+                            <p class="text-sm text-gray-600 mt-1">Kawasan outdoor: 400m radius (50.27 hektar)</p>
+                        </div>
+                        <div class="p-3 bg-yellow-50 border rounded-lg">
+                            <div class="flex items-center gap-2">
+                                <input type="radio" id="thermal_only_outbreak" name="equipment" value="thermal">
+                                <label for="thermal_only_outbreak" class="font-medium">Thermal Fogging Sahaja</label>
+                            </div>
+                            <p class="text-sm text-gray-600 mt-1">Jika ULV tidak tersedia</p>
+                        </div>
                     </div>
-                    <button onclick="unlockSale(${sale.id})" class="btn-small ${sale.locked ? 'btn-danger' : 'btn-success'}">
-                        ${sale.locked ? 'Unlock' : 'Lock'}
-                    </button>
-                </div>
-            `).join('');
+                `;
+            }
+        }
+        function updateProductInfo() {
+            const selectedValue = document.getElementById('insecticide_type').value;
+            const solventType = document.getElementById('solvent_type').value;
+            const locationType = document.getElementById('location_type').value;
+            const applicationMethod = document.getElementById('application_method').value;
             
-            if (sales.length > 10) {
-                salesList.innerHTML += `<div style="text-align: center; padding: 10px; color: #666; font-style: italic;">... and ${sales.length - 10} more sales</div>`;
+            const allProducts = getAllProducts();
+            const product = allProducts[selectedValue];
+            const infoDiv = document.getElementById('product-info');
+            const warningsDiv = document.getElementById('product-warnings');
+            const solventWarningsDiv = document.getElementById('solvent-warnings');
+            const locationWarningsDiv = document.getElementById('location-warnings');
+
+            if (product) {
+                infoDiv.innerHTML = `
+                    <div><strong>Produk:</strong> ${product.common_products.join(', ')}</div>
+                    <div><strong>No. PHE:</strong> ${product.phe_number}</div>
+                    <div><strong>Kelas:</strong> ${product.chemical_class}</div>
+                    <div><strong>Pelarut Sesuai:</strong> ${product.compatible_solvents ? product.compatible_solvents.map(s => s === 'water' ? 'Air' : 'Minyak').join(', ') : 'Semua'}</div>
+                    <div><strong>Lokasi Sesuai:</strong> ${product.indoor_outdoor ? product.indoor_outdoor.map(l => l === 'indoor' ? 'Dalaman' : 'Luaran').join(', ') : 'Semua'}</div>
+                    ${selectedValue.startsWith('custom_') ? '<div class="text-blue-600 mt-1">✓ Custom Product</div>' : ''}
+                `;
+
+                // Check solvent compatibility
+                let solventWarning = '';
+                if (product.compatible_solvents && !product.compatible_solvents.includes(solventType)) {
+                    const compatibleSolvents = product.compatible_solvents.map(s => s === 'water' ? 'Air' : 'Minyak').join(' atau ');
+                    solventWarning = `<p class="text-sm text-red-600">⚠️ Produk ini hanya sesuai dengan ${compatibleSolvents}</p>`;
+                }
+                solventWarningsDiv.innerHTML = solventWarning;
+
+                // Check location compatibility
+                let locationWarning = '';
+                if (product.indoor_outdoor && !product.indoor_outdoor.includes(locationType)) {
+                    const compatibleLocations = product.indoor_outdoor.map(l => l === 'indoor' ? 'Dalaman' : 'Luaran').join(' atau ');
+                    locationWarning = `<p class="text-sm text-red-600">⚠️ Produk ini hanya sesuai untuk ${compatibleLocations}</p>`;
+                }
+                locationWarningsDiv.innerHTML = locationWarning;
+
+                // Update other warnings
+                let warningsHtml = '';
+                if (selectedValue === 'temephos_50ec' && applicationMethod !== 'larvicide') {
+                    warningsHtml = '<p class="text-sm text-orange-600 mt-1">⚠️ Temephos adalah khusus untuk kawalan larva sahaja</p>';
+                }
+                
+                if (selectedValue.startsWith('custom_') && applicationMethod === 'larvicide' && !product.larvicide_rate) {
+                    warningsHtml += '<p class="text-sm text-red-600 mt-1">⚠️ Produk ini tidak mempunyai kadar larvicide yang ditetapkan</p>';
+                }
+
+                // Special warnings for water-based products
+                if (product.compatible_solvents && product.compatible_solvents.length === 1 && product.compatible_solvents[0] === 'water') {
+                    warningsHtml += '<p class="text-sm text-blue-600 mt-1">ℹ️ Produk FFAST technology - gunakan air sahaja</p>';
+                }
+                
+                warningsDiv.innerHTML = warningsHtml;
             }
         }
 
-        function addSale() {
-            if (!isSetup) {
-                alert('Please complete setup first!');
-                showPage('setup');
+        // Reset form
+        function resetForm() {
+            document.getElementById('bilangan_rumah').value = '';
+            document.getElementById('isipadu_rumah').value = '';
+            document.getElementById('keluasan_kawasan').value = '';
+            document.getElementById('insecticide_type').value = 'malathion_57ec';
+            document.getElementById('application_method').value = 'fogging';
+            document.getElementById('solvent_type').value = 'water';
+            document.getElementById('location_type').value = 'outdoor';
+            document.getElementById('calculation_mode').value = 'standard';
+            document.getElementById('estimated_indoor_volume').value = '';
+            
+            // Reset equipment selection
+            const thermalOnly = document.getElementById('thermal_only');
+            if (thermalOnly) thermalOnly.checked = true;
+            
+            document.getElementById('results-container').style.display = 'none';
+            document.getElementById('no-results').style.display = 'block';
+            
+            updateCalculationMode();
+            updateProductInfo();
+        }
+
+        // Clear add product form
+        function clearAddProductForm() {
+            document.getElementById('new-name').value = '';
+            document.getElementById('new-chemical-class').value = 'Organophosphate';
+            document.getElementById('new-active-ingredient').value = '';
+            document.getElementById('new-concentration').value = '';
+            document.getElementById('new-phe-number').value = '';
+            document.getElementById('new-common-products').value = '';
+            document.getElementById('new-fogging-dilution').value = '';
+            document.getElementById('new-spraying-dilution').value = '';
+            document.getElementById('new-application-rate-fogging').value = '';
+            document.getElementById('new-application-rate-spraying').value = '';
+            document.getElementById('new-larvicide-rate').value = '';
+            document.getElementById('new-safety-warnings').value = '';
+            document.getElementById('new-environmental-warnings').value = '';
+            
+            // Clear multiple select fields
+            document.getElementById('new-compatible-solvents').selectedIndex = -1;
+            document.getElementById('new-indoor-outdoor').selectedIndex = -1;
+        }
+
+        // Add custom product
+        function addCustomProduct() {
+            const name = document.getElementById('new-name').value.trim();
+            const activeIngredient = document.getElementById('new-active-ingredient').value.trim();
+
+            if (!name || !activeIngredient) {
+                alert('Sila isi nama produk dan bahan aktif / Please fill in product name and active ingredient');
                 return;
             }
 
-            const price = parseFloat(document.getElementById('sale-price').value);
-            const buyer = document.getElementById('buyer-name').value.trim();
+            // Get selected solvent types
+            const solventSelect = document.getElementById('new-compatible-solvents');
+            const selectedSolvents = Array.from(solventSelect.selectedOptions).map(option => option.value);
+            
+            // Get selected locations
+            const locationSelect = document.getElementById('new-indoor-outdoor');
+            const selectedLocations = Array.from(locationSelect.selectedOptions).map(option => option.value);
 
-            if (!price || price <= 0) {
-                alert('Please enter a valid price!');
-                return;
-            }
-
-            if (!buyer) {
-                alert('Please enter buyer username!');
-                return;
-            }
-
-            const sale = {
-                id: ++saleCounter,
-                price: price,
-                buyer: buyer,
-                locked: true,
-                timestamp: new Date().toLocaleString()
+            const productId = editingProduct ? editingProduct.id : `custom_${Date.now()}`;
+            const productData = {
+                id: productId,
+                name: name,
+                chemical_class: document.getElementById('new-chemical-class').value,
+                active_ingredient: activeIngredient,
+                concentration: document.getElementById('new-concentration').value,
+                common_products: document.getElementById('new-common-products').value || name,
+                fogging_dilution: parseFloat(document.getElementById('new-fogging-dilution').value) || 0,
+                spraying_dilution: parseFloat(document.getElementById('new-spraying-dilution').value) || 0,
+                application_rate_fogging: parseFloat(document.getElementById('new-application-rate-fogging').value) || 0,
+                application_rate_spraying: parseFloat(document.getElementById('new-application-rate-spraying').value) || 0,
+                larvicide_rate: parseFloat(document.getElementById('new-larvicide-rate').value) || 0,
+                compatible_solvents: selectedSolvents.length > 0 ? selectedSolvents : ['water', 'oil'],
+                indoor_outdoor: selectedLocations.length > 0 ? selectedLocations : ['indoor', 'outdoor'],
+                phe_number: document.getElementById('new-phe-number').value,
+                safety_warnings: document.getElementById('new-safety-warnings').value,
+                environmental_warnings: document.getElementById('new-environmental-warnings').value
             };
 
-            sales.push(sale);
-            
-            // Clear inputs
-            document.getElementById('sale-price').value = '';
-            document.getElementById('buyer-name').value = '';
-            
-            updateLivePage();
-            
-            // Focus back on price input
-            document.getElementById('sale-price').focus();
-        }
-
-        function unlockSale(id) {
-            const sale = sales.find(s => s.id === id);
-            if (sale) {
-                sale.locked = !sale.locked;
-                if (currentPage === 'live') {
-                    updateLivePage();
-                } else if (currentPage === 'summary') {
-                    updateSummaryPage();
-                }
-            }
-        }
-
-        function updateSummaryPage() {
-            if (!isSetup || sales.length === 0) {
-                document.getElementById('summary-not-setup').classList.remove('hidden');
-                document.getElementById('summary-content').classList.add('hidden');
-                return;
-            }
-            
-            document.getElementById('summary-not-setup').classList.add('hidden');
-            document.getElementById('summary-content').classList.remove('hidden');
-            
-            const lockedSales = sales.filter(sale => sale.locked);
-            const currentSales = lockedSales.reduce((sum, sale) => sum + sale.price, 0);
-            const actualProfit = currentSales - totalBaleCost;
-            const progressPercentage = targetSales > 0 ? (currentSales / targetSales * 100) : 0;
-
-            // Update summary cards
-            document.getElementById('total-sales').textContent = currentSales.toFixed(2);
-            document.getElementById('target-sales').textContent = targetSales.toFixed(2);
-            document.getElementById('total-bale-cost').textContent = totalBaleCost.toFixed(2);
-            document.getElementById('actual-profit').textContent = actualProfit.toFixed(2);
-            document.getElementById('items-sold').textContent = lockedSales.length;
-            document.getElementById('progress-text').textContent = progressPercentage.toFixed(1) + '%';
-            
-            // Update progress bar
-            document.getElementById('progress-fill').style.width = Math.min(progressPercentage, 100) + '%';
-            
-            // Update profit color
-            const profitDisplay = document.getElementById('profit-display');
-            if (actualProfit >= 0) {
-                profitDisplay.className = 'summary-value profit';
+            if (editingProduct) {
+                // Update existing product
+                const index = customProducts.findIndex(p => p.id === editingProduct.id);
+                customProducts[index] = productData;
+                alert('Produk berjaya dikemaskini / Product successfully updated');
             } else {
-                profitDisplay.className = 'summary-value loss';
+                // Add new product
+                customProducts.push(productData);
+                alert('Produk baru berjaya ditambah / New product successfully added');
             }
-            
-            updateBuyerTotals();
+
+            saveCustomProducts();
+            updateProductDropdown();
+            updateManageButton();
+            closeAddProductModal();
         }
 
-        function updateBuyerTotals() {
-            const lockedSales = sales.filter(sale => sale.locked);
-            const buyerTotals = {};
+        // Edit custom product
+        function editCustomProduct(productId) {
+            const product = customProducts.find(p => p.id === productId);
+            if (!product) return;
 
-            lockedSales.forEach(sale => {
-                if (!buyerTotals[sale.buyer]) {
-                    buyerTotals[sale.buyer] = { total: 0, items: 0 };
-                }
-                buyerTotals[sale.buyer].total += sale.price;
-                buyerTotals[sale.buyer].items++;
+            editingProduct = product;
+            
+            // Populate form
+            document.getElementById('new-name').value = product.name;
+            document.getElementById('new-chemical-class').value = product.chemical_class;
+            document.getElementById('new-active-ingredient').value = product.active_ingredient;
+            document.getElementById('new-concentration').value = product.concentration;
+            document.getElementById('new-phe-number').value = product.phe_number;
+            document.getElementById('new-common-products').value = product.common_products;
+            document.getElementById('new-fogging-dilution').value = product.fogging_dilution;
+            document.getElementById('new-spraying-dilution').value = product.spraying_dilution;
+            document.getElementById('new-application-rate-fogging').value = product.application_rate_fogging;
+            document.getElementById('new-application-rate-spraying').value = product.application_rate_spraying;
+            document.getElementById('new-larvicide-rate').value = product.larvicide_rate;
+            document.getElementById('new-safety-warnings').value = product.safety_warnings;
+            document.getElementById('new-environmental-warnings').value = product.environmental_warnings;
+
+            // Populate multi-select fields
+            const solventSelect = document.getElementById('new-compatible-solvents');
+            Array.from(solventSelect.options).forEach(option => {
+                option.selected = product.compatible_solvents && product.compatible_solvents.includes(option.value);
             });
 
-            const buyerTotalsDiv = document.getElementById('buyer-totals');
+            const locationSelect = document.getElementById('new-indoor-outdoor');
+            Array.from(locationSelect.options).forEach(option => {
+                option.selected = product.indoor_outdoor && product.indoor_outdoor.includes(option.value);
+            });
+
+            // Update modal title and button
+            document.getElementById('modal-title').textContent = 'Edit Produk / Edit Product';
+            document.getElementById('save-button-text').textContent = 'Kemaskini / Update';
+
+            // Show modal
+            document.getElementById('add-product-modal').classList.add('show');
+            document.getElementById('manage-products-modal').classList.remove('show');
+        }
+
+        // Delete custom product
+        function deleteCustomProduct(productId) {
+            if (confirm('Adakah anda pasti untuk memadam produk ini? / Are you sure you want to delete this product?')) {
+                customProducts = customProducts.filter(p => p.id !== productId);
+                
+                // Reset selection if deleted product was selected
+                if (document.getElementById('insecticide_type').value === productId) {
+                    document.getElementById('insecticide_type').value = 'malathion_57ec';
+                    updateProductInfo();
+                }
+                
+                saveCustomProducts();
+                updateProductDropdown();
+                updateManageButton();
+                updateManageProductsList();
+            }
+        }
+
+        // Update manage products list
+        function updateManageProductsList() {
+            const container = document.getElementById('custom-products-list');
             
-            if (Object.keys(buyerTotals).length === 0) {
-                buyerTotalsDiv.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">👤</div>
-                        <p>No buyers yet</p>
-                    </div>
+            if (customProducts.length === 0) {
+                container.innerHTML = `
+                    <p class="text-center text-gray-500 py-8">
+                        Tiada produk custom ditambah lagi / No custom products added yet
+                    </p>
                 `;
                 return;
             }
 
-            const grandTotal = Object.values(buyerTotals).reduce((sum, buyer) => sum + buyer.total, 0);
-            const totalItems = Object.values(buyerTotals).reduce((sum, buyer) => sum + buyer.items, 0);
-
-            buyerTotalsDiv.innerHTML = Object.entries(buyerTotals)
-                .sort(([,a], [,b]) => b.total - a.total)
-                .map(([buyer, data]) => `
-                    <div class="buyer-row">
-                        <div>
-                            <div class="buyer-name">${buyer}</div>
-                            <div class="buyer-items">${data.items} items</div>
-                        </div>
-                        <div class="buyer-total">RM ${data.total.toFixed(2)}</div>
-                    </div>
-                `).join('') + `
-                <div class="buyer-row">
+            container.innerHTML = customProducts.map(product => `
+                <div class="border rounded-lg p-4 flex justify-between items-center mb-3">
                     <div>
-                        <div class="buyer-name">TOTAL</div>
-                        <div class="buyer-items">${totalItems} items</div>
+                        <h3 class="font-semibold">${product.name}</h3>
+                        <p class="text-sm text-gray-600">
+                            ${product.chemical_class} | ${product.active_ingredient} | ${product.concentration}
+                        </p>
+                        <p class="text-xs text-gray-500">PHE: ${product.phe_number}</p>
+                        <p class="text-xs text-blue-600">
+                            Pelarut: ${product.compatible_solvents ? product.compatible_solvents.map(s => s === 'water' ? 'Air' : 'Minyak').join(', ') : 'Semua'} | 
+                            Lokasi: ${product.indoor_outdoor ? product.indoor_outdoor.map(l => l === 'indoor' ? 'Dalaman' : 'Luaran').join(', ') : 'Semua'}
+                        </p>
                     </div>
-                    <div class="buyer-total">RM ${grandTotal.toFixed(2)}</div>
+                    <div class="flex gap-2">
+                        <button onclick="editCustomProduct('${product.id}')" class="text-blue-600 hover:text-blue-800 p-1">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="m18.5 2.5 a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/>
+                            </svg>
+                        </button>
+                        <button onclick="deleteCustomProduct('${product.id}')" class="text-red-600 hover:text-red-800 p-1">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24">
+                                <path d="m3 6 3 0 m0 0 a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3M6 6v14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6M10 11v6M14 11v6"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-            `;
+            `).join('');
         }
 
-        function addMoreBales() {
-            showPage('setup');
-            window.scrollTo(0, 0);
+        // Close add product modal
+        function closeAddProductModal() {
+            document.getElementById('add-product-modal').classList.remove('show');
+            clearAddProductForm();
+            editingProduct = null;
+            document.getElementById('modal-title').textContent = 'Tambah Produk Baru / Add New Product';
+            document.getElementById('save-button-text').textContent = 'Simpan / Save';
         }
 
-        function resetAll() {
-            if (confirm('Are you sure you want to reset everything? All bale costs and sales data will be lost!')) {
-                // Reset all data
-                sales = [];
-                saleCounter = 0;
-                totalBaleCost = 0;
-                targetSales = 0;
-                isSetup = false;
-                baleCount = 1;
+        // Calculate dosage
+        function calculateDosage() {
+            const calculationMode = document.getElementById('calculation_mode').value;
+            const insecticideType = document.getElementById('insecticide_type').value;
+            const applicationMethod = document.getElementById('application_method').value;
+            const solventType = document.getElementById('solvent_type').value;
+            const locationType = document.getElementById('location_type').value;
+
+            const allProducts = getAllProducts();
+            const insecticide = allProducts[insecticideType];
+
+            if (!insecticide) {
+                alert('Produk yang dipilih tidak dijumpai / Selected product not found');
+                return;
+            }
+
+            // Check product compatibility
+            if (insecticide.compatible_solvents && !insecticide.compatible_solvents.includes(solventType)) {
+                const compatibleSolvents = insecticide.compatible_solvents.map(s => s === 'water' ? 'Air' : 'Minyak').join(' atau ');
+                alert(`Produk ini tidak serasi dengan ${solventType === 'water' ? 'air' : 'minyak'}. Sila gunakan ${compatibleSolvents}.`);
+                return;
+            }
+
+            if (insecticide.indoor_outdoor && !insecticide.indoor_outdoor.includes(locationType)) {
+                const compatibleLocations = insecticide.indoor_outdoor.map(l => l === 'indoor' ? 'Dalaman' : 'Luaran').join(' atau ');
+                alert(`Produk ini tidak sesuai untuk ${locationType === 'indoor' ? 'dalaman' : 'luaran'}. Sila gunakan untuk ${compatibleLocations}.`);
+                return;
+            }
+
+            if (insecticideType === 'temephos_50ec' && applicationMethod !== 'larvicide') {
+                alert('Temephos adalah khusus untuk kawalan larva sahaja. Sila pilih produk lain untuk fogging/spraying.');
+                return;
+            }
+
+            let calculations = {};
+
+            if (calculationMode === 'standard') {
+                // Standard calculation (existing logic)
+                const bilanganRumah = document.getElementById('bilangan_rumah').value;
+                const isipaduRumah = document.getElementById('isipadu_rumah').value;
+                const keluasanKawasan = document.getElementById('keluasan_kawasan').value;
+
+                if (!bilanganRumah || !isipaduRumah || !keluasanKawasan) {
+                    alert('Sila isi semua maklumat yang diperlukan / Please fill in all required information');
+                    return;
+                }
+
+                const houses = parseInt(bilanganRumah);
+                const volumePerHouse = parseFloat(isipaduRumah);
+                const areaHectares = parseFloat(keluasanKawasan);
+                const totalVolume = houses * volumePerHouse;
+                const totalArea = areaHectares * 10000;
+
+                calculations = calculateStandardDosage(insecticide, applicationMethod, totalVolume, totalArea, solventType);
+                calculations.scenario = 'Standard';
+                calculations.totalVolume = totalVolume;
+                calculations.totalArea = totalArea;
+
+            } else {
+                // Scenario-based calculation
+                const estimatedIndoorVolume = parseFloat(document.getElementById('estimated_indoor_volume').value) || 0;
+                const equipmentType = document.querySelector('input[name="equipment"]:checked')?.value;
+
+                if (!equipmentType) {
+                    alert('Sila pilih jenis peralatan / Please select equipment type');
+                    return;
+                }
+
+                let radius, outdoorArea;
+                if (calculationMode === 'single_case') {
+                    radius = 200; // meters
+                    outdoorArea = Math.PI * Math.pow(radius, 2); // m²
+                    calculations.scenario = 'Kes Tunggal (200m radius)';
+                } else {
+                    radius = 400; // meters  
+                    outdoorArea = Math.PI * Math.pow(radius, 2); // m²
+                    calculations.scenario = 'Wabak (400m radius)';
+                }
+
+                const outdoorAreaHectares = outdoorArea / 10000;
+
+                // Calculate outdoor requirements
+                let outdoorCalc = {};
+                if (applicationMethod === 'fogging') {
+                    if (insecticide.name === 'Moskilla') {
+                        // Use ACM calculation method for Moskilla
+                        // 25ml per hectare (as per ACM document)
+                        const insecticideAmount = outdoorAreaHectares * 25 / 1000; // Convert ml to L
+                        const solutionNeeded = insecticideAmount / (5 / 1000); // 5ml per liter dilution
+                        const solventAmount = solutionNeeded - insecticideAmount;
+
+                        outdoorCalc = {
+                            solutionNeeded: solutionNeeded,
+                            insecticideAmount: insecticideAmount,
+                            solventAmount: solventAmount,
+                            concentrationPercent: 0.5 // 5ml per liter = 0.5%
+                        };
+                    } else {
+                        // Standard calculation for other products
+                        const dilutionRate = insecticide.fogging_dilution / 100;
+                        const solutionNeeded = outdoorArea * insecticide.application_rate_fogging / 1000000; // Convert to liters
+                        const insecticideAmount = solutionNeeded * dilutionRate;
+                        const solventAmount = solutionNeeded - insecticideAmount;
+
+                        outdoorCalc = {
+                            solutionNeeded: solutionNeeded,
+                            insecticideAmount: insecticideAmount,
+                            solventAmount: solventAmount,
+                            concentrationPercent: insecticide.fogging_dilution
+                        };
+                    }
+                } else if (applicationMethod === 'spraying') {
+                    const dilutionRate = insecticide.spraying_dilution / 100;
+                    const solutionNeeded = outdoorArea * insecticide.application_rate_spraying / 1000; // Liters
+                    const insecticideAmount = solutionNeeded * dilutionRate;
+                    const solventAmount = solutionNeeded - insecticideAmount;
+
+                    outdoorCalc = {
+                        solutionNeeded: solutionNeeded,
+                        insecticideAmount: insecticideAmount,
+                        solventAmount: solventAmount,
+                        concentrationPercent: insecticide.spraying_dilution
+                    };
+                }
+
+                // Calculate indoor requirements (if estimated)
+                let indoorCalc = { solutionNeeded: 0, insecticideAmount: 0, solventAmount: 0 };
+                if (estimatedIndoorVolume > 0) {
+                    if (applicationMethod === 'fogging') {
+                        if (insecticide.name === 'Moskilla') {
+                            // Use ACM calculation method: 200ml solution per 1000m³
+                            const solutionNeeded = estimatedIndoorVolume * 0.2 / 1000; // 200ml per 1000m³
+                            const insecticideAmount = solutionNeeded * (5 / 1000); // 5ml per liter
+                            const solventAmount = solutionNeeded - insecticideAmount;
+
+                            indoorCalc = {
+                                solutionNeeded: solutionNeeded,
+                                insecticideAmount: insecticideAmount,
+                                solventAmount: solventAmount
+                            };
+                        } else {
+                            // Standard calculation for other products
+                            const dilutionRate = insecticide.fogging_dilution / 100;
+                            const solutionNeeded = estimatedIndoorVolume * insecticide.application_rate_fogging / 1000;
+                            const insecticideAmount = solutionNeeded * dilutionRate;
+                            const solventAmount = solutionNeeded - insecticideAmount;
+
+                            indoorCalc = {
+                                solutionNeeded: solutionNeeded,
+                                insecticideAmount: insecticideAmount,
+                                solventAmount: solventAmount
+                            };
+                        }
+                    }
+                }
+
+                // Combined totals
+                const totalSolution = outdoorCalc.solutionNeeded + indoorCalc.solutionNeeded;
+                const totalInsecticide = outdoorCalc.insecticideAmount + indoorCalc.insecticideAmount;
+                const totalSolvent = outdoorCalc.solventAmount + indoorCalc.solventAmount;
+
+                // Equipment calculations
+                const chargesNeeded = Math.ceil(totalSolution / equipmentSpecs.fogger_capacity);
+                const equipmentNeeded = Math.ceil(chargesNeeded / 4); // 4 charges per operator per operation (as per ACM)
+
+                calculations = {
+                    scenario: calculationMode === 'single_case' ? 'Kes Tunggal (200m radius)' : 'Wabak (400m radius)',
+                    radius: radius,
+                    outdoorAreaHectares: outdoorAreaHectares.toFixed(2),
+                    outdoorAreaM2: outdoorArea.toFixed(0),
+                    estimatedIndoorVolume: estimatedIndoorVolume,
+                    equipmentType: equipmentType,
+                    
+                    // Outdoor calculations
+                    outdoorSolution: outdoorCalc.solutionNeeded.toFixed(2),
+                    outdoorInsecticide: (outdoorCalc.insecticideAmount * 1000).toFixed(1),
+                    outdoorSolvent: outdoorCalc.solventAmount.toFixed(2),
+                    
+                    // Indoor calculations  
+                    indoorSolution: indoorCalc.solutionNeeded.toFixed(2),
+                    indoorInsecticide: (indoorCalc.insecticideAmount * 1000).toFixed(1),
+                    indoorSolvent: indoorCalc.solventAmount.toFixed(2),
+                    
+                    // Total calculations
+                    solutionNeeded: totalSolution.toFixed(2),
+                    insecticideAmount: totalInsecticide.toFixed(3),
+                    insecticideAmountMl: (totalInsecticide * 1000).toFixed(1),
+                    solventAmount: totalSolvent.toFixed(2),
+                    solventType: solventType === 'water' ? 'Air' : 'Minyak',
+                    
+                    chargesNeeded: chargesNeeded,
+                    chargesPerMachine: Math.ceil(chargesNeeded / equipmentNeeded),
+                    equipmentNeeded: equipmentNeeded,
+                    equipmentType: equipmentType === 'thermal_ulv' ? 'Thermal + ULV' : 'Thermal Fogging',
+                    concentrationPercent: outdoorCalc.concentrationPercent,
+                    
+                    // ACM validation for 200m radius Moskilla
+                    acm_validation: insecticide.name === 'Moskilla' && calculationMode === 'single_case' ? 
+                        `ACM Standard: 16 caj untuk 200m radius (${(totalInsecticide * 1000).toFixed(0)}ml ≈ 315ml)` : null,
+                    
+                    applicationMethod: applicationMethod
+                };
+            }
+
+            displayResults({
+                ...calculations,
+                insecticideName: insecticide.name,
+                chemicalClass: insecticide.chemical_class,
+                pheNumber: insecticide.phe_number,
+                locationType: locationType === 'indoor' ? 'Dalaman' : 'Luaran',
+                safetyWarnings: insecticide.safety_warnings || [],
+                environmentalWarnings: insecticide.environmental_warnings || []
+            });
+        }
+
+        // Helper function for standard calculations
+        function calculateStandardDosage(insecticide, applicationMethod, totalVolume, totalArea, solventType) {
+            if (applicationMethod === 'fogging') {
+                const dilutionRate = insecticide.fogging_dilution / 100;
+                let solutionNeeded, insecticideAmount;
                 
-                // Reset form
-                document.getElementById('bale-inputs').innerHTML = `
-                    <div class="bale-input" id="bale-input-1">
-                        <input type="number" placeholder="Bale Cost (RM)" id="bale-cost-1" step="0.01">
-                        <button onclick="removeBale(1)" class="btn-danger btn-small" style="display: none;">❌</button>
+                // Use ACM calculation method for Moskilla
+                if (insecticide.name === 'Moskilla') {
+                    // ACM method: 200ml solution per 1000m³
+                    solutionNeeded = totalVolume * 0.2 / 1000; // 200ml per 1000m³
+                    insecticideAmount = solutionNeeded * (5 / 1000); // 5ml per liter
+                } else {
+                    // Standard method for other products
+                    solutionNeeded = totalVolume * insecticide.application_rate_fogging / 1000;
+                    insecticideAmount = solutionNeeded * dilutionRate;
+                }
+                
+                const solventAmount = solutionNeeded - insecticideAmount;
+                const chargesNeeded = Math.ceil(solutionNeeded / equipmentSpecs.fogger_capacity);
+                const foggersNeeded = Math.ceil(chargesNeeded / 4); // 4 charges per operator per operation
+
+                return {
+                    solutionNeeded: solutionNeeded.toFixed(2),
+                    insecticideAmount: insecticideAmount.toFixed(3),
+                    insecticideAmountMl: (insecticideAmount * 1000).toFixed(1),
+                    solventAmount: solventAmount.toFixed(2),
+                    solventType: solventType === 'water' ? 'Air' : 'Minyak',
+                    chargesNeeded: chargesNeeded,
+                    chargesPerMachine: Math.ceil(chargesNeeded / foggersNeeded),
+                    equipmentNeeded: foggersNeeded,
+                    equipmentType: 'Fogger',
+                    dilutionRatio: insecticide.name === 'Moskilla' ? '1:200' : `1:${Math.round(100/insecticide.fogging_dilution - 1)}`,
+                    concentrationPercent: insecticide.fogging_dilution,
+                    applicationMethod: applicationMethod
+                };
+            } else if (applicationMethod === 'spraying') {
+                const dilutionRate = insecticide.spraying_dilution / 100;
+                const solutionNeeded = totalArea * insecticide.application_rate_spraying / 1000;
+                const insecticideAmount = solutionNeeded * dilutionRate;
+                const solventAmount = solutionNeeded - insecticideAmount;
+
+                const chargesNeeded = Math.ceil(solutionNeeded / equipmentSpecs.sprayer_capacity);
+                const sprayersNeeded = Math.ceil(chargesNeeded / 4);
+
+                return {
+                    solutionNeeded: solutionNeeded.toFixed(2),
+                    insecticideAmount: insecticideAmount.toFixed(3),
+                    insecticideAmountMl: (insecticideAmount * 1000).toFixed(1),
+                    solventAmount: solventAmount.toFixed(2),
+                    solventType: solventType === 'water' ? 'Air' : 'Minyak',
+                    chargesNeeded: chargesNeeded,
+                    chargesPerMachine: Math.ceil(chargesNeeded / sprayersNeeded),
+                    equipmentNeeded: sprayersNeeded,
+                    equipmentType: 'Sprayer',
+                    dilutionRatio: `1:${Math.round(100/insecticide.spraying_dilution - 1)}`,
+                    concentrationPercent: insecticide.spraying_dilution,
+                    applicationMethod: applicationMethod
+                };
+            } else if (applicationMethod === 'larvicide') {
+                // Handle larvicide calculations
+                const breedingSitesEstimate = Math.ceil(totalVolume / 200 * 0.3); // Estimate based on volume
+                const solutionPerSite = 10;
+                const totalLarvicideSolution = breedingSitesEstimate * solutionPerSite;
+                const insecticideAmount = totalLarvicideSolution * (insecticide.larvicide_rate / 1000000);
+
+                return {
+                    breedingSitesEstimate: breedingSitesEstimate,
+                    solutionNeeded: totalLarvicideSolution.toFixed(2),
+                    insecticideAmount: insecticideAmount.toFixed(3),
+                    insecticideAmountMl: (insecticideAmount * 1000).toFixed(1),
+                    solventAmount: (totalLarvicideSolution - insecticideAmount).toFixed(2),
+                    solventType: 'Air',
+                    concentrationPpm: insecticide.larvicide_rate,
+                    applicationNote: 'Untuk kawalan larva di tempat pembiakan',
+                    applicationMethod: applicationMethod
+                };
+            }
+        }
+
+        // Display results
+        function displayResults(results) {
+            const container = document.getElementById('results-container');
+            const noResults = document.getElementById('no-results');
+
+            let resultsHtml = '';
+
+            if (results.scenario) {
+                // Scenario-based results
+                resultsHtml = `
+                    <!-- Scenario Summary -->
+                    <div class="bg-white p-4 rounded-lg border-l-4 border-red-500 mb-4">
+                        <h3 class="font-semibold text-red-800 mb-2">Senario Respons / Response Scenario</h3>
+                        <div class="grid grid-cols-1 gap-2 text-sm">
+                            <div><strong>Senario:</strong> ${results.scenario}</div>
+                            <div><strong>Radius Kawalan:</strong> ${results.radius}m</div>
+                            <div><strong>Kawasan Luaran:</strong> ${results.outdoorAreaHectares} hektar (${results.outdoorAreaM2} m²)</div>
+                            <div><strong>Anggaran Dalaman:</strong> ${results.estimatedIndoorVolume} m³</div>
+                            <div><strong>Peralatan:</strong> ${results.equipmentType}</div>
+                        </div>
+                    </div>
+
+                    <!-- Product Summary -->
+                    <div class="bg-white p-4 rounded-lg border-l-4 border-blue-500 mb-4">
+                        <h3 class="font-semibold text-blue-800 mb-2">Produk / Product</h3>
+                        <div class="grid grid-cols-1 gap-2 text-sm">
+                            <div><strong>Produk:</strong> ${results.insecticideName}</div>
+                            <div><strong>Kelas Kimia:</strong> ${results.chemicalClass}</div>
+                            <div><strong>No. PHE:</strong> ${results.pheNumber}</div>
+                            <div><strong>Kaedah:</strong> ${results.applicationMethod}</div>
+                            <div><strong>Pelarut:</strong> ${results.solventType}</div>
+                        </div>
+                    </div>
+
+                    <!-- Breakdown by Location -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="bg-white p-4 rounded-lg border border-green-200">
+                            <h3 class="font-semibold text-green-800 mb-3">Kawasan Luaran / Outdoor</h3>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span>Larutan / Solution:</span>
+                                    <span class="font-semibold">${results.outdoorSolution} L</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Racun / Insecticide:</span>
+                                    <span class="font-semibold">${results.outdoorInsecticide} mL</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>${results.solventType}:</span>
+                                    <span class="font-semibold">${results.outdoorSolvent} L</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg border border-blue-200">
+                            <h3 class="font-semibold text-blue-800 mb-3">Anggaran Dalaman / Est. Indoor</h3>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span>Larutan / Solution:</span>
+                                    <span class="font-semibold">${results.indoorSolution} L</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Racun / Insecticide:</span>
+                                    <span class="font-semibold">${results.indoorInsecticide} mL</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>${results.solventType}:</span>
+                                    <span class="font-semibold">${results.indoorSolvent} L</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Total Requirements -->
+                    <div class="bg-white p-4 rounded-lg mb-4">
+                        <h3 class="font-semibold text-purple-800 mb-3">Jumlah Keperluan / Total Requirements</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span>Jumlah Larutan / Total Solution:</span>
+                                <span class="font-semibold text-lg">${results.solutionNeeded} L</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Jumlah Racun Pekat / Total Concentrate:</span>
+                                <span class="font-semibold text-lg">${results.insecticideAmountMl} mL</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Jumlah ${results.solventType} / Total Solvent:</span>
+                                <span class="font-semibold text-lg">${results.solventAmount} L</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Kepekatan / Concentration:</span>
+                                <span class="font-semibold">${results.concentrationPercent}%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Equipment Requirements -->
+                    <div class="bg-white p-4 rounded-lg mb-4">
+                        <h3 class="font-semibold text-orange-800 mb-3">Keperluan Peralatan / Equipment Requirements</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span>Bilangan Caj / Number of Charges:</span>
+                                <span class="font-semibold">${results.chargesNeeded}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Caj per Mesin / Charges per Machine:</span>
+                                <span class="font-semibold">${results.chargesPerMachine}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Bilangan Mesin Diperlukan:</span>
+                                <span class="font-semibold">${results.equipmentNeeded}</span>
+                            </div>
+                            ${results.acm_validation ? `
+                                <div class="mt-2 p-2 bg-green-100 rounded text-sm text-green-800">
+                                    <strong>✓ ${results.acm_validation}</strong>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Important Notes for Field Operations -->
+                    <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-4">
+                        <h3 class="font-semibold text-yellow-800 mb-2">Nota Lapangan / Field Notes</h3>
+                        <ul class="space-y-1 text-sm text-yellow-700">
+                            <li>• Survey pagi akan menentukan isipadu dalaman sebenar</li>
+                            <li>• Sediakan racun tambahan 10-15% untuk kontingensi</li>
+                            <li>• Semak peralatan dan bateri sebelum keluar</li>
+                            <li>• Koordinasi dengan pihak berkuasa tempatan</li>
+                            <li>• Morning survey will determine actual indoor volume</li>
+                            <li>• Prepare 10-15% extra insecticide for contingency</li>
+                        </ul>
+                    </div>
+
+                    ${results.insecticideName === 'Moskilla' ? `
+                        <!-- ACM Calculation Method -->
+                        <div class="bg-green-50 border border-green-200 p-4 rounded-lg mb-4">
+                            <h3 class="font-semibold text-green-800 mb-2">Kaedah Kiraan ACM / ACM Calculation Method</h3>
+                            <div class="text-sm text-green-700 space-y-1">
+                                <div><strong>Pencairan:</strong> 5ml Moskilla per 1 liter larutan (1:200)</div>
+                                <div><strong>Dalaman:</strong> 200ml larutan per 1000m³</div>
+                                <div><strong>Luaran:</strong> 25ml Moskilla per hektar</div>
+                                <div><strong>Kapasiti Mesin:</strong> 4 liter per caj</div>
+                                <div><strong>Rujukan:</strong> Agricultural Chemicals (M) Sdn Bhd - Official MOH Calculation</div>
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+            } else {
+                // Standard results (existing format)
+                resultsHtml = `
+                    <!-- Summary -->
+                    <div class="bg-white p-4 rounded-lg border-l-4 border-blue-500 mb-4">
+                        <h3 class="font-semibold text-blue-800 mb-2">Ringkasan / Summary</h3>
+                        <div class="grid grid-cols-1 gap-2 text-sm">
+                            <div><strong>Produk:</strong> ${results.insecticideName}</div>
+                            <div><strong>Kelas Kimia:</strong> ${results.chemicalClass}</div>
+                            <div><strong>No. PHE:</strong> ${results.pheNumber}</div>
+                            <div><strong>Kaedah:</strong> ${results.applicationMethod}</div>
+                            <div><strong>Pelarut:</strong> ${results.solventType}</div>
+                            <div><strong>Lokasi:</strong> ${results.locationType}</div>
+                            <div class="grid grid-cols-2 gap-2 mt-2">
+                                <div>Jumlah Rumah: ${document.getElementById('bilangan_rumah').value}</div>
+                                <div>Kawasan: ${document.getElementById('keluasan_kawasan').value} hektar</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dosage Results -->
+                    <div class="bg-white p-4 rounded-lg mb-4">
+                        <h3 class="font-semibold text-green-800 mb-3">Penggunaan Racun / Insecticide Usage</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span>Jumlah Larutan / Total Solution:</span>
+                                <span class="font-semibold">${results.solutionNeeded} L</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Racun Pekat / Concentrate:</span>
+                                <span class="font-semibold">${results.insecticideAmountMl} mL</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>${results.solventType} / Solvent:</span>
+                                <span class="font-semibold">${results.solventAmount} L</span>
+                            </div>
+                            ${results.dilutionRatio ? `
+                                <div class="flex justify-between">
+                                    <span>Nisbah Pencairan / Dilution Ratio:</span>
+                                    <span class="font-semibold">${results.dilutionRatio}</span>
+                                </div>
+                            ` : ''}
+                            ${results.concentrationPercent ? `
+                                <div class="flex justify-between">
+                                    <span>Kepekatan / Concentration:</span>
+                                    <span class="font-semibold">${results.concentrationPercent}%</span>
+                                </div>
+                            ` : ''}
+                            ${results.concentrationPpm ? `
+                                <div class="flex justify-between">
+                                    <span>Kepekatan Larvicide:</span>
+                                    <span class="font-semibold">${results.concentrationPpm} ppm</span>
+                                </div>
+                            ` : ''}
+                            ${results.breedingSitesEstimate ? `
+                                <div class="flex justify-between">
+                                    <span>Anggaran Tempat Pembiakan:</span>
+                                    <span class="font-semibold">${results.breedingSitesEstimate} lokasi</span>
+                                </div>
+                            ` : ''}
+                        </div>
                     </div>
                 `;
-                document.getElementById('target-multiplier').value = '';
-                
-                // Hide displays
-                document.getElementById('cost-display').classList.add('hidden');
-                document.getElementById('target-display').classList.add('hidden');
-                
-                // Clear inputs
-                document.getElementById('sale-price').value = '';
-                document.getElementById('buyer-name').value = '';
-                
-                // Dim other tabs
-                document.querySelector(`[onclick="showPage('live')"]`).style.opacity = '0.5';
-                document.querySelector(`[onclick="showPage('summary')"]`).style.opacity = '0.5';
-                
-                // Go to setup page
-                showPage('setup');
-                
-                alert('All data has been reset. Please complete setup again.');
-            }
-        }
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            if (currentPage === 'live') {
-                // Enter key support for sale entry
-                if (e.target.id === 'sale-price' && e.key === 'Enter') {
-                    document.getElementById('buyer-name').focus();
-                } else if (e.target.id === 'buyer-name' && e.key === 'Enter') {
-                    addSale();
+                // Equipment requirements (not for larvicide)
+                if (results.applicationMethod !== 'larvicide') {
+                    resultsHtml += `
+                        <div class="bg-white p-4 rounded-lg mb-4">
+                            <h3 class="font-semibold text-orange-800 mb-3">Keperluan Peralatan / Equipment Requirements</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span>Bilangan Caj / Number of Charges:</span>
+                                    <span class="font-semibold">${results.chargesNeeded}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Caj per Mesin / Charges per Machine:</span>
+                                    <span class="font-semibold">${results.chargesPerMachine}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Bilangan ${results.equipmentType}:</span>
+                                    <span class="font-semibold">${results.equipmentNeeded}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 }
             }
-            
-            // Tab switching shortcuts (Ctrl + number)
-            if (e.ctrlKey) {
-                if (e.key === '1') showPage('setup');
-                else if (e.key === '2' && isSetup) showPage('live');
-                else if (e.key === '3' && isSetup) showPage('summary');
-            }
-        });
 
-        // Price input styling for live feedback
-        document.getElementById('sale-price').addEventListener('input', function() {
-            const price = parseFloat(this.value) || 0;
-            const currentSales = sales.filter(s => s.locked).reduce((sum, s) => sum + s.price, 0);
-            const remaining = targetSales - currentSales - price;
-            
-            if (price > 0 && remaining < 0) {
-                this.style.borderColor = '#38a169';
-                this.style.backgroundColor = '#f0fff4';
-            } else if (price > 0) {
-                this.style.borderColor = '#d69e2e';
-                this.style.backgroundColor = '#fffbeb';
-            } else {
-                this.style.borderColor = '#ddd';
-                this.style.backgroundColor = 'white';
+            // Safety warnings (common for both)
+            if (results.safetyWarnings.length > 0) {
+                resultsHtml += `
+                    <div class="bg-red-50 border border-red-200 p-4 rounded-lg mb-4">
+                        <h3 class="font-semibold text-red-800 mb-2 flex items-center gap-2">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                                <path d="M12 9v4m0 4h.01"/>
+                            </svg>
+                            Amaran Keselamatan / Safety Warnings
+                        </h3>
+                        <ul class="space-y-1 text-sm text-red-700">
+                            ${results.safetyWarnings.map(warning => `
+                                <li class="flex items-start gap-2">
+                                    <span class="text-red-500 mt-1">•</span>
+                                    <span>${warning}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
             }
-        });
 
-        // Initialize page
+            // Environmental warnings
+            if (results.environmentalWarnings.length > 0) {
+                resultsHtml += `
+                    <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+                        <h3 class="font-semibold text-yellow-800 mb-2 flex items-center gap-2">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                                <path d="M12 9v4m0 4h.01"/>
+                            </svg>
+                            Amaran Alam Sekitar / Environmental Warnings
+                        </h3>
+                        <ul class="space-y-1 text-sm text-yellow-700">
+                            ${results.environmentalWarnings.map(warning => `
+                                <li class="flex items-start gap-2">
+                                    <span class="text-yellow-500 mt-1">•</span>
+                                    <span>${warning}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = resultsHtml;
+            container.style.display = 'block';
+            noResults.style.display = 'none';
+        }
+
+        // Event listeners
         document.addEventListener('DOMContentLoaded', function() {
-            // Dim other tabs initially
-            document.querySelector(`[onclick="showPage('live')"]`).style.opacity = '0.5';
-            document.querySelector(`[onclick="showPage('summary')"]`).style.opacity = '0.5';
+            // Load custom products on page load
+            loadCustomProducts();
+            updateCalculationMode();
+            updateProductInfo();
+
+            // Product and mode selection changes
+            document.getElementById('calculation_mode').addEventListener('change', updateCalculationMode);
+            document.getElementById('insecticide_type').addEventListener('change', updateProductInfo);
+            document.getElementById('application_method').addEventListener('change', updateProductInfo);
+            document.getElementById('solvent_type').addEventListener('change', updateProductInfo);
+            document.getElementById('location_type').addEventListener('change', updateProductInfo);
+
+            // Button event listeners
+            document.getElementById('btn-calculate').addEventListener('click', calculateDosage);
+            document.getElementById('btn-reset').addEventListener('click', resetForm);
+            
+            document.getElementById('btn-add-product').addEventListener('click', function() {
+                document.getElementById('add-product-modal').classList.add('show');
+            });
+            
+            document.getElementById('btn-manage-products').addEventListener('click', function() {
+                updateManageProductsList();
+                document.getElementById('manage-products-modal').classList.add('show');
+            });
+
+            // Modal event listeners
+            document.getElementById('btn-close-modal').addEventListener('click', closeAddProductModal);
+            document.getElementById('btn-cancel-modal').addEventListener('click', closeAddProductModal);
+            document.getElementById('btn-save-product').addEventListener('click', addCustomProduct);
+            
+            document.getElementById('btn-close-manage-modal').addEventListener('click', function() {
+                document.getElementById('manage-products-modal').classList.remove('show');
+            });
+
+            // Close modals when clicking outside
+            document.getElementById('add-product-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeAddProductModal();
+                }
+            });
+            
+            document.getElementById('manage-products-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('show');
+                }
+            });
         });
     </script>
 </body>
